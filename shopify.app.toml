@@ -1,0 +1,37 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "ade848cd9472eb0f027309f702e2b68a"
+name = "Ciwi.ai:PD(Local)"
+handle = "ciwi-ai-pdlocal"
+application_url = "https://01e1b0cc3292.ngrok.app"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "ciwishop.myshopify.com"
+include_config_on_deploy = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [
+  "https://01e1b0cc3292.ngrok.app/auth/callback",
+  "https://01e1b0cc3292.ngrok.app/auth/shopify/callback",
+  "https://01e1b0cc3292.ngrok.app/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2025-04"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+[pos]
+embedded = false

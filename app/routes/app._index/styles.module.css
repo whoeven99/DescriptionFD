@@ -1,0 +1,54 @@
+.Ciwi_Analytics_Metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  height: 70px;
+}
+
+.Ciwi_Analytics_Metrics {
+  position: relative;
+}
+
+.Ciwi_Analytics_Metrics_LeftTop{
+    border-right: 1px solid #ebebeb;
+    border-bottom: 1px solid #ebebeb;
+}
+.Ciwi_Analytics_Metrics_LeftDown{
+    border-right: 1px solid #ebebeb;
+    border-top: 1px solid #ebebeb;
+}
+.Ciwi_Analytics_Metrics_RightTop{
+    border-left: 1px solid #ebebeb;
+    border-bottom: 1px solid #ebebeb;
+}
+.Ciwi_Analytics_Metrics_RightDown{
+    border-left: 1px solid #ebebeb;
+    border-top: 1px solid #ebebeb;
+}
+
+.Ciwi_Analytics_TimeSaved{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 45px 0;
+}
+
+.Ciwi_QuickGenerator_Result {
+    height: 100%;
+    border-radius: 16px;
+    background-color: #f7f7f7;
+    padding: 16px 16px 80px;
+    max-height: 700px;
+}
+
+.Ciwi_QuickGenerator_Result_Empty {
+    padding-top: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+}
