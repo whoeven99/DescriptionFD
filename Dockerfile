@@ -1,11 +1,12 @@
-FROM node:18-alpine
+FROM node:20-alpine3.17
+
 RUN apk add --no-cache openssl
 
 EXPOSE 3000
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+ENV NODE_ENV=test
 
 COPY package.json package-lock.json* ./
 
