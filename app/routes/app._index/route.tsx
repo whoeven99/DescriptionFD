@@ -24,7 +24,6 @@ import {
     Thumbnail,
     SkeletonBodyText,
 } from "@shopify/polaris";
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "app/shopify.server";
 import {
     SearchIcon,
@@ -37,6 +36,9 @@ import {
     ThumbsUpIcon,
     ClipboardIcon
 } from '@shopify/polaris-icons';
+import dynamic from "next/dist/shared/lib/dynamic";
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+import 'react-quill/dist/quill.snow.css';
 import styles from "./styles.module.css"
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -116,7 +118,7 @@ export default function Index() {
     const [contentType, setContentType] = useState<string>("description");
     const [seoKeyword, setSeoKeyword] = useState<string>("");
     const [template, setTemplate] = useState<string>("product1");
-    const [shippingAddress, setShippingAddress] = useState<string>("");
+    const [additionalInformation, setAdditionalInformation] = useState<string>("");
     const [language, setLanguage] = useState<string>("en");
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
     const [options, setOptions] = useState<{
@@ -128,9 +130,15 @@ export default function Index() {
     const [willLoadMoreResults, setWillLoadMoreResults] = useState(true);
     const [endCursor, setEndCursor] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [isEdit, setIsEdit] = useState(false);
+    const [seoKeywordError, setSeoKeywordError] = useState("");
+    const [productError, setProductError] = useState("");
+    const [originalDescription, setOriginalDescription] = useState("");
+    const [editedDescription, setEditedDescription] = useState("");
 
     const fetcher = useFetcher<typeof action>();
     const generateFetcher = useFetcher<any>();
+    const publishFetcher = useFetcher<any>();
 
     useEffect(() => {
         fetcher.submit({}, { method: "POST" });
@@ -146,12 +154,26 @@ export default function Index() {
     }, [fetcher.data]);
 
     useEffect(() => {
-        console.log(generateFetcher.data);
+        if (fetcher.data) {
+            shopify.toast.show("Description published successfully");
+        }
+    }, [publishFetcher.data]);
+
+    useEffect(() => {
+        if (generateFetcher.data) {
+            setOriginalDescription(generateFetcher.data.data.description);
+            setEditedDescription(generateFetcher.data.data.description);
+        }
     }, [generateFetcher.data]);
 
     const updateSelection = useCallback(
         (selected: string[]) => {
             setSelectedOptions(selected);
+            if (selected.length === 0) {
+                setProductError("Product is required");
+            } else {
+                setProductError("");
+            }
         },
         [options],
     );
@@ -183,10 +205,29 @@ export default function Index() {
             setLoading(true);
             setTimeout(() => {
                 fetcher.submit({ endCursor }, { method: "POST" });
-                console.log(fetcher.data);
             }, 1000);
         }
     }, [willLoadMoreResults, endCursor, options.length]);
+
+    const handlePublish = useCallback(() => {
+        publishFetcher.submit({
+            productId: selectedOptions[0],
+            description: editedDescription,
+        }, { method: "POST", action: "/descriptionPublish" });
+    }, [selectedOptions, editedDescription]);
+
+    const handleEdit = useCallback(() => {
+        setIsEdit(true);
+    }, []);
+
+    const handleConfirm = useCallback(() => {
+        setIsEdit(false);
+    }, []);
+
+    const handleCancel = useCallback(() => {
+        setEditedDescription(originalDescription);
+        setIsEdit(false);
+    }, []);
 
     return (
         <Page
@@ -333,6 +374,7 @@ export default function Index() {
                                                             prefix={<Icon source={SearchIcon} tone="base" />}
                                                             placeholder="Search Product"
                                                             autoComplete="off"
+                                                            error={productError}
                                                         />
                                                     }
                                                 />
@@ -341,7 +383,13 @@ export default function Index() {
                                                 label="SEO keyword"
                                                 value={seoKeyword}
                                                 placeholder="Keyword"
-                                                onChange={(value) => setSeoKeyword(value)}
+                                                error={seoKeywordError}
+                                                onChange={(value) => {
+                                                    setSeoKeyword(value);
+                                                    if (value.length !== 0) {
+                                                        setSeoKeywordError("");
+                                                    }
+                                                }}
                                                 autoComplete="off"
                                             />
                                             <Select
@@ -354,10 +402,10 @@ export default function Index() {
                                                 onChange={(value) => setTemplate(value)}
                                             />
                                             <TextField
-                                                label="Shipping address"
-                                                value={shippingAddress}
+                                                label="Additional information"
+                                                value={additionalInformation}
                                                 placeholder="Add unique product details, specifications, key selling points, etc"
-                                                onChange={(value) => setShippingAddress(value)}
+                                                onChange={(value) => setAdditionalInformation(value)}
                                                 multiline={4}
                                                 autoComplete="off"
                                             />
@@ -400,12 +448,29 @@ export default function Index() {
                                                     variant="primary"
                                                     icon={MagicIcon}
                                                     onClick={() => {
+                                                        setIsEdit(false);
+                                                        let errors = false;
+                                                        if (seoKeyword.length === 0) {
+                                                            setSeoKeywordError("Store name is required");
+                                                            errors = true;
+                                                        } else {
+                                                            setSeoKeywordError("");
+                                                        }
+                                                        if (selectedOptions.length === 0) {
+                                                            setProductError("Product is required");
+                                                            errors = true;
+                                                        } else {
+                                                            setProductError("");
+                                                        }
+                                                        if (errors) {
+                                                            return;
+                                                        }
                                                         generateFetcher.submit({
                                                             pageType,
                                                             contentType,
                                                             seoKeyword,
                                                             template,
-                                                            shippingAddress,
+                                                            additionalInformation,
                                                             language,
                                                         }, { method: "POST", action: "/aiGenerateDescription" });
                                                     }}
@@ -417,7 +482,7 @@ export default function Index() {
                                         </BlockStack>
                                     </Grid.Cell>
                                     <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 8 }}>
-                                        <div className={styles.Ciwi_QuickGenerator_Result + " " + (generateFetcher.data ? styles.hasResult : "")}>
+                                        <div className={styles.Ciwi_QuickGenerator_Result + " " + (generateFetcher.data && !isEdit ? styles.hasResult : "") + " " + (isEdit ? styles.isEdit : "")}>
                                             {!generateFetcher.data && generateFetcher.state !== "submitting" ? <div className={styles.Ciwi_QuickGenerator_Result_Empty}>
                                                 <Text as="p" variant="bodyMd">
                                                     Generated content will appear here
@@ -427,21 +492,34 @@ export default function Index() {
                                                 <SkeletonBodyText lines={10} />
                                             </div> : null}
                                             {generateFetcher.data && generateFetcher.state !== "submitting" ? <div className={styles.Ciwi_QuickGenerator_Result_Content}>
-                                                <div className={styles.Ciwi_QuickGenerator_Result_Markdown}>
-                                                    <Text as="p" variant="bodyMd">
-                                                        {generateFetcher.data.data.description}
-                                                    </Text>
-                                                </div>
-                                                <div className={styles.Ciwi_QuickGenerator_Result_Feedback}>
-                                                    <ButtonGroup>
-                                                        <Button >Publish</Button>
-                                                        <Button >Edit</Button>
-                                                    </ButtonGroup>
-                                                    <InlineStack gap="100">
-                                                        <Button icon={ClipboardIcon} variant="tertiary" />
-                                                        <Button icon={ThumbsUpIcon} variant="tertiary" />
-                                                        <Button icon={ThumbsDownIcon} variant="tertiary" />
-                                                    </InlineStack>
+                                                {isEdit ?
+                                                    <div className={styles.Ciwi_QuickGenerator_Result_Editor}>
+                                                        <ReactQuill value={editedDescription} onChange={(value) => setEditedDescription(value)} style={{ height: "590px" }} />
+                                                    </div>
+                                                    :
+                                                    <div className={styles.Ciwi_QuickGenerator_Result_Markdown}>
+                                                        <div dangerouslySetInnerHTML={{ __html: editedDescription }} />
+                                                    </div>
+                                                }
+                                                <div className={styles.Ciwi_QuickGenerator_Result_Feedback + " " + (isEdit ? styles.Edit_Button : "")}>
+                                                    {isEdit ?
+                                                        <ButtonGroup>
+                                                            <Button onClick={handleConfirm}>Confirm</Button>
+                                                            <Button onClick={handleCancel}>Cancel</Button>
+                                                        </ButtonGroup>
+                                                        :
+                                                        <>
+                                                            <ButtonGroup>
+                                                                <Button onClick={handlePublish} loading={publishFetcher.state === "submitting"}>Publish</Button>
+                                                                <Button onClick={handleEdit}>Edit</Button>
+                                                            </ButtonGroup>
+                                                            <InlineStack gap="100">
+                                                                <Button icon={ClipboardIcon} variant="tertiary" />
+                                                                <Button icon={ThumbsUpIcon} variant="tertiary" />
+                                                                <Button icon={ThumbsDownIcon} variant="tertiary" />
+                                                            </InlineStack>
+                                                        </>
+                                                    }
                                                 </div>
                                             </div> : null}
                                         </div>
@@ -455,3 +533,4 @@ export default function Index() {
         </Page >
     );
 }
+
