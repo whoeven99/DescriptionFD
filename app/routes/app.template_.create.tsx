@@ -1,0 +1,344 @@
+import { useFetcher, useNavigate } from "@remix-run/react";
+import { SaveBar } from "@shopify/app-bridge-react";
+import { ActionList, Autocomplete, AvatarProps, BlockStack, Box, Button, ButtonGroup, Card, FormLayout, Grid, Icon, IconProps, InlineStack, Layout, Page, Popover, Select, SkeletonBodyText, Text, TextField, Thumbnail, ThumbnailProps } from "@shopify/polaris";
+import { MagicIcon, SearchIcon, ChevronDownIcon, DeleteIcon, ClipboardIcon, ThumbsUpIcon, ThumbsDownIcon } from "@shopify/polaris-icons";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import styles from "./styles/styles.module.css";
+
+const originalData = {
+  name: "",
+  description: "",
+  pageType: "product",
+  contentType: "Description",
+  content: "",
+};
+
+const Index = () => {
+  const [updateData, setUpdateData] = useState(originalData);
+  const [nameError, setNameError] = useState("");
+  const [contentError, setContentError] = useState("");
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [options, setOptions] = useState<{
+    id: string,
+    label: string,
+    value: string,
+    media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps>
+  }[]>([]);
+  const [language, setLanguage] = useState<string>("en");
+  const [willLoadMoreResults, setWillLoadMoreResults] = useState(true);
+  const [endCursor, setEndCursor] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [productError, setProductError] = useState("");
+
+  const selectedProductItem = useMemo(() => {
+    const selectedProduct = options.find((option: { id: string; label: string; value: string; media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps> }) => {
+      return selectedOptions.includes(option.value);
+    });
+    return (
+      selectedProduct ? <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+        <InlineStack gap="400" align="space-between" blockAlign="center" direction="row" wrap={false}>
+          <InlineStack gap="400" align="center" blockAlign="center" direction="row" wrap={false}>
+            {/* <Icon source={SearchIcon} tone="base" /> */}
+            {selectedProduct?.media}
+            <Text as="p" variant="bodyMd">
+              {selectedProduct?.label}
+            </Text>
+          </InlineStack>
+          <Button icon={DeleteIcon} variant="tertiary" onClick={() => {
+            setSelectedOptions([]);
+          }} />
+        </InlineStack>
+      </Box> : null
+    )
+  }, [options, selectedOptions]);
+
+  const navigate = useNavigate();
+
+  const fetcher = useFetcher<any>();
+  const generateFetcher = useFetcher<any>();
+
+  useEffect(() => {
+    fetcher.submit({}, { method: "POST", action: "/app" });
+  }, []);
+
+  useEffect(() => {
+    if (fetcher.data) {
+      setLoading(false);
+      setOptions((prev) => [...prev, ...fetcher.data!.product.map((product: any) => ({ id: product.id, label: product.title, value: product.id, media: <Thumbnail source={product.image} alt={product.title} /> }))]);
+      setWillLoadMoreResults(fetcher.data!.hasNextPage);
+      setEndCursor(fetcher.data!.endCursor);
+    }
+  }, [fetcher.data]);
+
+  useEffect(() => {
+    if (JSON.stringify(updateData) !== JSON.stringify(originalData)) {
+      shopify.saveBar.show('template-create-save-bar');
+    } else {
+      shopify.saveBar.hide('template-create-save-bar');
+    }
+  }, [updateData]);
+
+  const handleSave = () => {
+    if (updateData.name === "") {
+      setNameError("Name is required");
+    } else {
+      setNameError("");
+    }
+    if (updateData.content === "") {
+      setContentError("Content is required");
+    } else {
+      setContentError("");
+    }
+    if (nameError || contentError) {
+      return;
+    }
+    shopify.saveBar.hide('template-create-save-bar');
+  };
+
+  const handleDiscard = () => {
+    setUpdateData(originalData);
+    shopify.saveBar.hide('template-create-save-bar');
+  };
+
+  const updateSelection = useCallback(
+    (selected: string[]) => {
+      setSelectedOptions(selected);
+      if (selected.length === 0) {
+        setProductError("Product is required");
+      } else {
+        setProductError("");
+      }
+    },
+    [options],
+  );
+
+  const handleLoadMoreResults = useCallback(() => {
+    if (willLoadMoreResults && endCursor) {
+      setLoading(true);
+      setTimeout(() => {
+        fetcher.submit({ endCursor }, { method: "POST" });
+      }, 1000);
+    }
+  }, [willLoadMoreResults, endCursor, options.length]);
+
+  return (
+    <Page
+      title="Create template"
+      subtitle="Build a reusable pattern for generating content"
+      compactTitle
+      backAction={{
+        onAction: () => {
+          shopify.saveBar.hide('template-create-save-bar');
+          navigate("/app/template");
+        },
+      }}
+    >
+      <Layout>
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <FormLayout>
+                <Text variant="headingSm" as="h2">
+                  Template information
+                </Text>
+                <TextField
+                  type="text"
+                  name="name"
+                  label="Template name"
+                  autoComplete="off"
+                  value={updateData.name}
+                  onChange={(value) => setUpdateData({ ...updateData, name: value })}
+                  error={nameError}
+                />
+              </FormLayout>
+              <FormLayout>
+                <TextField
+                  type="text"
+                  name="description"
+                  label="Template description"
+                  autoComplete="off"
+                  value={updateData.description}
+                  onChange={(value) => setUpdateData({ ...updateData, description: value })}
+                />
+              </FormLayout>
+              <FormLayout>
+                <Select
+                  name="type"
+                  label="Page type"
+                  value={updateData.pageType}
+                  onChange={(value) => setUpdateData({ ...updateData, pageType: value })}
+                  options={[
+                    { label: "Product", value: "product" },
+                    { label: "Collection", value: "collection" },
+                  ]}
+                />
+              </FormLayout>
+              <FormLayout>
+                <Select
+                  name="contentType"
+                  label="Content type"
+                  value={updateData.contentType}
+                  onChange={(value) => setUpdateData({ ...updateData, contentType: value })}
+                  options={[
+                    { label: "Description", value: "Description" },
+                    { label: "SEO Description", value: "SEODescription" },
+                  ]}
+                />
+              </FormLayout>
+              <FormLayout>
+                <TextField
+                  type="text"
+                  name="content"
+                  label="Template content"
+                  multiline={4}
+                  autoComplete="off"
+                  value={updateData.content}
+                  onChange={(value) => setUpdateData({ ...updateData, content: value })}
+                  error={contentError}
+                />
+              </FormLayout>
+            </BlockStack>
+            <SaveBar id="template-create-save-bar">
+              <button variant="primary" onClick={handleSave}></button>
+              <button onClick={handleDiscard}></button>
+            </SaveBar>
+          </Card>
+        </Layout.Section>
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Grid>
+                <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4 }}>
+                  <BlockStack gap="400">
+                    <InlineStack gap="100">
+                      <Box>
+                        <Icon
+                          source={MagicIcon}
+                          tone="base"
+                        />
+                      </Box>
+                      <Text as="h2" variant="headingMd">
+                        Test template
+                      </Text>
+                    </InlineStack>
+                    {selectedProductItem ? selectedProductItem :
+                      <Autocomplete
+                        options={options}
+                        selected={selectedOptions}
+                        onSelect={updateSelection}
+                        loading={loading}
+                        onLoadMoreResults={handleLoadMoreResults}
+                        willLoadMoreResults={willLoadMoreResults}
+                        textField={
+                          <Autocomplete.TextField
+                            label="Product"
+                            prefix={<Icon source={SearchIcon} tone="base" />}
+                            placeholder="Search Product"
+                            autoComplete="off"
+                            error={productError}
+                          />
+                        }
+                      />
+                    }
+                    <Select
+                      label="Language"
+                      options={[
+                        { label: "English", value: "en" },
+                        { label: "French", value: "fr" },
+                      ]}
+                      value={language}
+                      onChange={(value) => setLanguage(value)}
+                    />
+                    <InlineStack gap="200" wrap={false}>
+                      <div style={{ minWidth: "115px" }}>
+                        <ButtonGroup variant="segmented">
+                          <Popover
+                            active={false}
+                            preferredAlignment="right"
+                            activator={
+                              <Button
+                                variant="tertiary"
+                                icon={ChevronDownIcon}
+                              >
+                                GPT-4.1 Mini
+                              </Button>
+                            }
+                            autofocusTarget="first-node"
+                            onClose={() => { }}
+                          >
+                            <ActionList
+                              actionRole="menuitem"
+                              items={[{ content: 'Save as draft' }]}
+                            />
+                          </Popover>
+                        </ButtonGroup>
+                      </div>
+
+                      <Button
+                        fullWidth
+                        variant="primary"
+                        icon={MagicIcon}
+                        onClick={() => {
+                          let errors = false;
+                          if (selectedOptions.length === 0) {
+                            setProductError("Product is required");
+                            errors = true;
+                          } else {
+                            setProductError("");
+                          }
+                          if (errors) {
+                            return;
+                          }
+                          generateFetcher.submit({
+                            id: selectedOptions[0],
+                            pageType: updateData.pageType,
+                            contentType: updateData.contentType,
+                            seoKeyword: "",
+                            template: updateData.content,
+                            additionalInformation: "",
+                            test: false,
+                            language,
+                          }, { method: "POST", action: "/aiGenerateDescription" });
+                        }}
+                        loading={generateFetcher.state === "submitting"}
+                      >
+                        Generate
+                      </Button>
+                    </InlineStack>
+                  </BlockStack>
+                </Grid.Cell>
+                <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 8 }}>
+                  <div className={styles.Ciwi_QuickGenerator_Result + " " + styles.hasResult}>
+                    {!generateFetcher.data && generateFetcher.state !== "submitting" ? <div className={styles.Ciwi_QuickGenerator_Result_Empty}>
+                      <Text as="p" variant="bodyMd">
+                        Generated content will appear here
+                      </Text>
+                    </div> : null}
+                    {generateFetcher.state === "submitting" ? <div className={styles.Ciwi_QuickGenerator_Result_Loading}>
+                      <SkeletonBodyText lines={10} />
+                    </div> : null}
+                    {generateFetcher.data && generateFetcher.state !== "submitting" ? <div className={styles.Ciwi_QuickGenerator_Result_Content}>
+                      <div className={styles.Ciwi_QuickGenerator_Result_Markdown}>
+                        <div dangerouslySetInnerHTML={{ __html: generateFetcher.data.data.description }} />
+                      </div>
+                      <div className={styles.Ciwi_QuickGenerator_Result_Feedback}>
+                        <InlineStack gap="100">
+                          <Button icon={ClipboardIcon} variant="tertiary" />
+                          <Button icon={ThumbsUpIcon} variant="tertiary" />
+                          <Button icon={ThumbsDownIcon} variant="tertiary" />
+                        </InlineStack>
+                      </div>
+                    </div> : null}
+                  </div>
+                </Grid.Cell>
+              </Grid>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+
+      </Layout>
+    </Page>
+  );
+};
+
+export default Index;

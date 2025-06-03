@@ -1,0 +1,26 @@
+.Ciwi_template_card_content {
+  position: relative;
+}
+
+.Ciwi_template_card_content_markdown {
+  padding: 16px;
+  height: 216px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.Ciwi_template_card_content_name {
+  position: absolute;
+  bottom: -140px;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  border-radius: 0 0 8px 8px;
+  background-color: #f7f7f7;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: start;
+  max-height: 144px;
+  overflow: hidden;
+}

@@ -1,8 +1,13 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
-import { authenticate } from "../shopify.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-    await authenticate.admin(request);
+    const formData = await request.formData();
+
+    const id = formData.get("id");
+    const pageType = formData.get("pageType");
+    const contentType = formData.get("contentType");
+
+    console.log(pageType, contentType);
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -11,6 +16,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         errorCode: null,
         errorMessage: null,
         data: {
+            id: id,
+            pageType: pageType,
+            contentType: contentType,
             description: "This is a description",
         },
     };

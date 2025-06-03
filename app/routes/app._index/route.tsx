@@ -24,7 +24,6 @@ import {
     Thumbnail,
     SkeletonBodyText,
 } from "@shopify/polaris";
-import { authenticate } from "app/shopify.server";
 import {
     SearchIcon,
     MagicIcon,
@@ -39,7 +38,8 @@ import {
 import dynamic from "next/dist/shared/lib/dynamic";
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 import 'react-quill/dist/quill.snow.css';
-import styles from "./styles.module.css"
+import styles from "../styles/styles.module.css"
+import { authenticate } from "app/shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
     const { admin } = await authenticate.admin(request);
@@ -59,65 +59,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     };
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-    const { admin } = await authenticate.admin(request);
-    const formData = await request.formData();
-    const endCursor = formData.get("endCursor");
-    const query = formData.get("query");
-    const response = await admin.graphql(
-        `#graphql
-      query products($first: Int!, $endCursor: String, $query: String) {
-        products(first: $first, after: $endCursor, query: $query) {
-          edges {
-            node {
-              id
-              title
-              media(first: 1) {
-                    edges {
-                        node {
-                                preview {
-                                image {
-                                    id
-                                    url
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-          }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
-        }
-      }`,
-        {
-            variables: {
-                first: 50,
-                endCursor: endCursor,
-                query: query || "",
-            },
-        },
-    );
-    const responseJson = await response.json();
-    return {
-        product: responseJson!.data!.products!.edges.map((edge: any) => ({
-            id: edge.node.id,
-            title: edge.node.title,
-            image: edge.node.media.edges[0]?.node?.preview?.image?.url || "",
-        })),
-        hasNextPage: responseJson!.data!.products!.pageInfo.hasNextPage,
-        endCursor: responseJson!.data!.products!.pageInfo.endCursor,
-    };
-};
-
 export default function Index() {
     const { shopOwnerName } = useLoaderData<typeof loader>();
     const [pageType, setPageType] = useState<string>("product");
-    const [contentType, setContentType] = useState<string>("description");
+    const [contentType, setContentType] = useState<"Description" | "SEODescription">("Description");
+    const [template, setTemplate] = useState<string>("");
     const [seoKeyword, setSeoKeyword] = useState<string>("");
-    const [template, setTemplate] = useState<string>("product1");
     const [additionalInformation, setAdditionalInformation] = useState<string>("");
     const [language, setLanguage] = useState<string>("en");
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
@@ -133,15 +80,86 @@ export default function Index() {
     const [isEdit, setIsEdit] = useState(false);
     const [seoKeywordError, setSeoKeywordError] = useState("");
     const [productError, setProductError] = useState("");
-    const [originalDescription, setOriginalDescription] = useState("");
-    const [editedDescription, setEditedDescription] = useState("");
+    const [originalData, setOriginalData] = useState<any>({});
+    const [editedData, setEditedData] = useState<any>({});
+    const [templates, setTemplates] = useState<any>({
+        0: {
+            Description: [
+                {
+                    id: 0,
+                    title: "Template 1",
+                    description: "Template 1 description",
+                    content: "Template 1 content",
+                    type: "product",
+                },
+                {
+                    id: 1,
+                    title: "Template 2",
+                    description: "Template 2 description",
+                    content: "Template 2 content",
+                    type: "collection",
+                }
+            ],
+            SEODescription: [
+                {
+                    id: 2,
+                    title: "Template 1",
+                    description: "Template 1 description",
+                    content: "Template 1 content",
+                    type: "product",
+                }
+            ]
+        },
+        1: {
+            Description: [
+                {
+                    id: 3,
+                    title: "Template 1",
+                    description: "Template 1 description",
+                    content: "Template 1 content",
+                    type: "product",
+                },
+                {
+                    id: 4,
+                    title: "Template 2",
+                    description: "Template 2 description",
+                    content: "Template 2 content",
+                    type: "collection",
+                }
+            ],
+            SEODescription: [
+                {
+                    id: 5,
+                    title: "Template 1",
+                    description: "Template 1 description",
+                    content: "Template 1 content",
+                    type: "product",
+                }
+            ]
+        },
+    });
 
-    const fetcher = useFetcher<typeof action>();
+    const filterTemplates = useMemo(() => {
+        const allTemplates = Object.values(templates).reduce((acc: any[], curr: any) => {
+            // 2. 获取当前 contentType 的模板
+            const templatesByContentType = curr[contentType] || [];
+            // 3. 筛选出 type 匹配 pageType 的模板
+            const filteredTemplates = templatesByContentType.filter(
+                (template: any) => template.type === pageType
+            );
+            // 4. 合并到结果数组
+            return [...acc, ...filteredTemplates];
+        }, [] as any[]);
+
+        return allTemplates;
+    }, [pageType, contentType]);
+
+    const fetcher = useFetcher<any>();
     const generateFetcher = useFetcher<any>();
     const publishFetcher = useFetcher<any>();
 
     useEffect(() => {
-        fetcher.submit({}, { method: "POST" });
+        fetcher.submit({}, { method: "POST", action: "/app" });
     }, []);
 
     useEffect(() => {
@@ -161,8 +179,8 @@ export default function Index() {
 
     useEffect(() => {
         if (generateFetcher.data) {
-            setOriginalDescription(generateFetcher.data.data.description);
-            setEditedDescription(generateFetcher.data.data.description);
+            setOriginalData(generateFetcher.data.data);
+            setEditedData(generateFetcher.data.data);
         }
     }, [generateFetcher.data]);
 
@@ -211,10 +229,12 @@ export default function Index() {
 
     const handlePublish = useCallback(() => {
         publishFetcher.submit({
-            productId: selectedOptions[0],
-            description: editedDescription,
+            id: selectedOptions[0],
+            pageType: editedData.pageType,
+            contentType: editedData.contentType,
+            description: editedData.description,
         }, { method: "POST", action: "/descriptionPublish" });
-    }, [selectedOptions, editedDescription]);
+    }, [selectedOptions, editedData]);
 
     const handleEdit = useCallback(() => {
         setIsEdit(true);
@@ -225,7 +245,7 @@ export default function Index() {
     }, []);
 
     const handleCancel = useCallback(() => {
-        setEditedDescription(originalDescription);
+        setEditedData(originalData);
         setIsEdit(false);
     }, []);
 
@@ -241,61 +261,59 @@ export default function Index() {
                         <Grid>
                             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 8 }}>
                                 <Card>
-                                    <BlockStack gap="500">
-                                        <BlockStack gap="200">
-                                            <InlineStack gap="100">
-                                                <Box>
-                                                    <Icon source={WandIcon} tone="base" />
-                                                </Box>
-                                                <Text as="h2" variant="headingMd">
-                                                    Generated content
-                                                </Text>
-                                            </InlineStack>
-                                            <div className={styles.Ciwi_Analytics_Metrics}>
-                                                <Grid columns={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }} gap={{ xs: "0", sm: "0", md: "0", lg: "0", xl: "0" }}>
-                                                    <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                        <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_LeftTop}>
-                                                            <Text as="p" variant="bodyMd">
-                                                                Product description
-                                                            </Text>
-                                                            <Text as="p" variant="headingXl">
-                                                                13
-                                                            </Text>
-                                                        </div>
-                                                    </Grid.Cell>
-                                                    <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                        <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_RightTop}>
-                                                            <Text as="p" variant="bodyMd">
-                                                                Product SEO description
-                                                            </Text>
-                                                            <Text as="p" variant="headingXl">
-                                                                1
-                                                            </Text>
-                                                        </div>
-                                                    </Grid.Cell>
-                                                    <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                        <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_LeftDown}>
-                                                            <Text as="p" variant="bodyMd">
-                                                                Collection description
-                                                            </Text>
-                                                            <Text as="p" variant="headingXl">
-                                                                0
-                                                            </Text>
-                                                        </div>
-                                                    </Grid.Cell>
-                                                    <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                        <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_RightDown}>
-                                                            <Text as="p" variant="bodyMd">
-                                                                Collection SEO description
-                                                            </Text>
-                                                            <Text as="p" variant="headingXl">
-                                                                0
-                                                            </Text>
-                                                        </div>
-                                                    </Grid.Cell>
-                                                </Grid>
-                                            </div>
-                                        </BlockStack>
+                                    <BlockStack gap="200">
+                                        <InlineStack gap="100">
+                                            <Box>
+                                                <Icon source={WandIcon} tone="base" />
+                                            </Box>
+                                            <Text as="h2" variant="headingMd">
+                                                Generated content
+                                            </Text>
+                                        </InlineStack>
+                                        <div className={styles.Ciwi_Analytics_Metrics}>
+                                            <Grid columns={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }} gap={{ xs: "0", sm: "0", md: "0", lg: "0", xl: "0" }}>
+                                                <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
+                                                    <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_LeftTop}>
+                                                        <Text as="p" variant="bodyMd">
+                                                            Product description
+                                                        </Text>
+                                                        <Text as="p" variant="headingXl">
+                                                            13
+                                                        </Text>
+                                                    </div>
+                                                </Grid.Cell>
+                                                <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
+                                                    <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_RightTop}>
+                                                        <Text as="p" variant="bodyMd">
+                                                            Product SEO description
+                                                        </Text>
+                                                        <Text as="p" variant="headingXl">
+                                                            1
+                                                        </Text>
+                                                    </div>
+                                                </Grid.Cell>
+                                                <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
+                                                    <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_LeftDown}>
+                                                        <Text as="p" variant="bodyMd">
+                                                            Collection description
+                                                        </Text>
+                                                        <Text as="p" variant="headingXl">
+                                                            0
+                                                        </Text>
+                                                    </div>
+                                                </Grid.Cell>
+                                                <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
+                                                    <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_RightDown}>
+                                                        <Text as="p" variant="bodyMd">
+                                                            Collection SEO description
+                                                        </Text>
+                                                        <Text as="p" variant="headingXl">
+                                                            0
+                                                        </Text>
+                                                    </div>
+                                                </Grid.Cell>
+                                            </Grid>
+                                        </div>
                                     </BlockStack>
                                 </Card>
                             </Grid.Cell>
@@ -354,11 +372,11 @@ export default function Index() {
                                             <Select
                                                 label="Content type"
                                                 options={[
-                                                    { label: "Description", value: "description" },
-                                                    { label: "SEO description", value: "seo_description" },
+                                                    { label: "Description", value: "Description" },
+                                                    { label: "SEO description", value: "SEODescription" },
                                                 ]}
                                                 value={contentType}
-                                                onChange={(value) => setContentType(value)}
+                                                onChange={(value) => setContentType(value as "Description" | "SEODescription")}
                                             />
                                             {selectedProductItem ? selectedProductItem :
                                                 <Autocomplete
@@ -394,10 +412,7 @@ export default function Index() {
                                             />
                                             <Select
                                                 label="Template"
-                                                options={[
-                                                    { label: "Product 1", value: "product1" },
-                                                    { label: "Product 2", value: "product2" },
-                                                ]}
+                                                options={filterTemplates.map((template: any) => ({ label: template.title, value: template.id }))}
                                                 value={template}
                                                 onChange={(value) => setTemplate(value)}
                                             />
@@ -466,6 +481,7 @@ export default function Index() {
                                                             return;
                                                         }
                                                         generateFetcher.submit({
+                                                            id: selectedOptions[0],
                                                             pageType,
                                                             contentType,
                                                             seoKeyword,
@@ -494,11 +510,11 @@ export default function Index() {
                                             {generateFetcher.data && generateFetcher.state !== "submitting" ? <div className={styles.Ciwi_QuickGenerator_Result_Content}>
                                                 {isEdit ?
                                                     <div className={styles.Ciwi_QuickGenerator_Result_Editor}>
-                                                        <ReactQuill value={editedDescription} onChange={(value) => setEditedDescription(value)} style={{ height: "590px" }} />
+                                                        <ReactQuill value={editedData.description} onChange={(value) => setEditedData({ ...editedData, description: value })} style={{ height: "590px" }} />
                                                     </div>
                                                     :
                                                     <div className={styles.Ciwi_QuickGenerator_Result_Markdown}>
-                                                        <div dangerouslySetInnerHTML={{ __html: editedDescription }} />
+                                                        <div dangerouslySetInnerHTML={{ __html: editedData.description }} />
                                                     </div>
                                                 }
                                                 <div className={styles.Ciwi_QuickGenerator_Result_Feedback + " " + (isEdit ? styles.Edit_Button : "")}>
