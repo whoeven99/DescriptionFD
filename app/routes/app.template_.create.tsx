@@ -2,7 +2,7 @@ import { useFetcher, useNavigate } from "@remix-run/react";
 import { SaveBar } from "@shopify/app-bridge-react";
 import { ActionList, Autocomplete, AvatarProps, BlockStack, Box, Button, ButtonGroup, Card, FormLayout, Grid, Icon, IconProps, InlineStack, Layout, Page, Popover, Select, SkeletonBodyText, Text, TextField, Thumbnail, ThumbnailProps } from "@shopify/polaris";
 import { MagicIcon, SearchIcon, ChevronDownIcon, DeleteIcon, ClipboardIcon, ThumbsUpIcon, ThumbsDownIcon } from "@shopify/polaris-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./styles/styles.module.css";
 
 const originalData = {
@@ -15,6 +15,7 @@ const originalData = {
 
 const Index = () => {
   const [updateData, setUpdateData] = useState(originalData);
+  const [textValue, setTextValue] = useState<string>("");
   const [nameError, setNameError] = useState("");
   const [contentError, setContentError] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
@@ -30,18 +31,19 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [productError, setProductError] = useState("");
 
-  const selectedProductItem = useMemo(() => {
-    const selectedProduct = options.find((option: { id: string; label: string; value: string; media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps> }) => {
+  const isFirstLoad = useRef(true);
+  const selectedItem = useMemo(() => {
+    const selectedOption = options.find((option: { id: string; label: string; value: string; media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps> }) => {
       return selectedOptions.includes(option.value);
     });
     return (
-      selectedProduct ? <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+      selectedOption ? <Box padding="400" background="bg-surface-secondary" borderRadius="200">
         <InlineStack gap="400" align="space-between" blockAlign="center" direction="row" wrap={false}>
           <InlineStack gap="400" align="center" blockAlign="center" direction="row" wrap={false}>
             {/* <Icon source={SearchIcon} tone="base" /> */}
-            {selectedProduct?.media}
+            {selectedOption?.media}
             <Text as="p" variant="bodyMd">
-              {selectedProduct?.label}
+              {selectedOption?.label}
             </Text>
           </InlineStack>
           <Button icon={DeleteIcon} variant="tertiary" onClick={() => {
@@ -58,15 +60,32 @@ const Index = () => {
   const generateFetcher = useFetcher<any>();
 
   useEffect(() => {
-    fetcher.submit({}, { method: "POST", action: "/app" });
-  }, []);
+    if (updateData.pageType === "product") {
+      setOptions([]);
+      setLoading(true);
+      if (isFirstLoad.current) {
+        fetcher.submit({ query: textValue }, { method: "POST", action: "/getProductInfo" });
+        isFirstLoad.current = false;
+      }
+    } else {
+      setOptions([]);
+      setLoading(true);
+      if (isFirstLoad.current) {
+        fetcher.submit({ query: textValue }, { method: "POST", action: "/getCollectionInfo" });
+        isFirstLoad.current = false;
+      }
+    }
+  }, [updateData.pageType, textValue]);
 
   useEffect(() => {
     if (fetcher.data) {
-      setLoading(false);
-      setOptions((prev) => [...prev, ...fetcher.data!.product.map((product: any) => ({ id: product.id, label: product.title, value: product.id, media: <Thumbnail source={product.image} alt={product.title} /> }))]);
-      setWillLoadMoreResults(fetcher.data!.hasNextPage);
-      setEndCursor(fetcher.data!.endCursor);
+      console.log("fetcher.data: ", fetcher.data);
+      if (fetcher.data.success) {
+        setLoading(false);
+        setOptions((prev) => [...prev, ...fetcher.data!.response.data.map((item: any) => ({ id: item.id, label: item.title, value: item.id, media: <Thumbnail source={item.image} alt={item.title} /> }))]);
+        setWillLoadMoreResults(fetcher.data!.response.hasNextPage);
+        setEndCursor(fetcher.data!.response.endCursor);
+      }
     }
   }, [fetcher.data]);
 
@@ -115,11 +134,17 @@ const Index = () => {
   const handleLoadMoreResults = useCallback(() => {
     if (willLoadMoreResults && endCursor) {
       setLoading(true);
-      setTimeout(() => {
-        fetcher.submit({ endCursor }, { method: "POST" });
-      }, 1000);
+      if (updateData.pageType === "product") {
+        setTimeout(() => {
+          fetcher.submit({ endCursor: endCursor }, { method: "POST", action: "/getProductInfo" });
+        }, 1000);
+      } else {
+        setTimeout(() => {
+          fetcher.submit({ endCursor: endCursor }, { method: "POST", action: "/getCollectionInfo" });
+        }, 1000);
+      }
     }
-  }, [willLoadMoreResults, endCursor, options.length]);
+  }, [willLoadMoreResults, endCursor, options.length, updateData.pageType]);
 
   return (
     <Page
@@ -166,7 +191,12 @@ const Index = () => {
                   name="type"
                   label="Page type"
                   value={updateData.pageType}
-                  onChange={(value) => setUpdateData({ ...updateData, pageType: value })}
+                  onChange={(value) => {
+                    setUpdateData({ ...updateData, pageType: value });
+                    setSelectedOptions([]);
+                    setTextValue("");
+                    isFirstLoad.current = true;
+                  }}
                   options={[
                     { label: "Product", value: "product" },
                     { label: "Collection", value: "collection" },
@@ -221,7 +251,7 @@ const Index = () => {
                         Test template
                       </Text>
                     </InlineStack>
-                    {selectedProductItem ? selectedProductItem :
+                    {selectedItem ? selectedItem :
                       <Autocomplete
                         options={options}
                         selected={selectedOptions}
@@ -231,11 +261,16 @@ const Index = () => {
                         willLoadMoreResults={willLoadMoreResults}
                         textField={
                           <Autocomplete.TextField
-                            label="Product"
+                            label={updateData.pageType === "product" ? "Product" : "Collection"}
                             prefix={<Icon source={SearchIcon} tone="base" />}
-                            placeholder="Search Product"
+                            placeholder={updateData.pageType === "product" ? "Search Product" : "Search Collection"}
                             autoComplete="off"
                             error={productError}
+                            value={textValue}
+                            onChange={(value) => {
+                              setTextValue(value);
+                              isFirstLoad.current = true;
+                            }}
                           />
                         }
                       />

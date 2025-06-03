@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import {
@@ -63,6 +63,7 @@ export default function Index() {
     const { shopOwnerName } = useLoaderData<typeof loader>();
     const [pageType, setPageType] = useState<string>("product");
     const [contentType, setContentType] = useState<"Description" | "SEODescription">("Description");
+    const [textValue, setTextValue] = useState<string>("");
     const [template, setTemplate] = useState<string>("");
     const [seoKeyword, setSeoKeyword] = useState<string>("");
     const [additionalInformation, setAdditionalInformation] = useState<string>("");
@@ -139,6 +140,8 @@ export default function Index() {
         },
     });
 
+    const isFirstLoad = useRef(true);
+
     const filterTemplates = useMemo(() => {
         const allTemplates = Object.values(templates).reduce((acc: any[], curr: any) => {
             // 2. 获取当前 contentType 的模板
@@ -159,20 +162,37 @@ export default function Index() {
     const publishFetcher = useFetcher<any>();
 
     useEffect(() => {
-        fetcher.submit({}, { method: "POST", action: "/app" });
-    }, []);
+        if (pageType === "product") {
+            setOptions([]);
+            setLoading(true);
+            if (isFirstLoad.current) {
+                fetcher.submit({ query: textValue }, { method: "POST", action: "/getProductInfo" });
+                isFirstLoad.current = false;
+            }
+        } else {
+            setOptions([]);
+            setLoading(true);
+            if (isFirstLoad.current) {
+                fetcher.submit({ query: textValue }, { method: "POST", action: "/getCollectionInfo" });
+                isFirstLoad.current = false;
+            }
+        }
+    }, [pageType, textValue]);
 
     useEffect(() => {
+        console.log("fetcher.data: ", fetcher.data);
         if (fetcher.data) {
-            setLoading(false);
-            setOptions((prev) => [...prev, ...fetcher.data!.product.map((product: any) => ({ id: product.id, label: product.title, value: product.id, media: <Thumbnail source={product.image} alt={product.title} /> }))]);
-            setWillLoadMoreResults(fetcher.data!.hasNextPage);
-            setEndCursor(fetcher.data!.endCursor);
+            if (fetcher.data.success) {
+                setLoading(false);
+                setOptions((prev) => [...prev, ...fetcher.data!.response.data.map((item: any) => ({ id: item.id, label: item.title, value: item.id, media: <Thumbnail source={item.image} alt={item.title} /> }))]);
+                setWillLoadMoreResults(fetcher.data!.response.hasNextPage);
+                setEndCursor(fetcher.data!.response.endCursor);
+            }
         }
     }, [fetcher.data]);
 
     useEffect(() => {
-        if (fetcher.data) {
+        if (publishFetcher.data) {
             shopify.toast.show("Description published successfully");
         }
     }, [publishFetcher.data]);
@@ -221,9 +241,15 @@ export default function Index() {
     const handleLoadMoreResults = useCallback(() => {
         if (willLoadMoreResults && endCursor) {
             setLoading(true);
-            setTimeout(() => {
-                fetcher.submit({ endCursor }, { method: "POST" });
-            }, 1000);
+            if (pageType === "product") {
+                setTimeout(() => {
+                    fetcher.submit({ endCursor: endCursor, query: textValue }, { method: "POST", action: "/getProductInfo" });
+                }, 1000);
+            } else {
+                setTimeout(() => {
+                    fetcher.submit({ endCursor: endCursor, query: textValue }, { method: "POST", action: "/getCollectionInfo" });
+                }, 1000);
+            }
         }
     }, [willLoadMoreResults, endCursor, options.length]);
 
@@ -258,90 +284,92 @@ export default function Index() {
             <BlockStack gap="500">
                 <Layout>
                     <Layout.Section>
-                        <Grid>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 8 }}>
-                                <Card>
-                                    <BlockStack gap="200">
-                                        <InlineStack gap="100">
-                                            <Box>
-                                                <Icon source={WandIcon} tone="base" />
-                                            </Box>
-                                            <Text as="h2" variant="headingMd">
-                                                Generated content
-                                            </Text>
-                                        </InlineStack>
-                                        <div className={styles.Ciwi_Analytics_Metrics}>
-                                            <Grid columns={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }} gap={{ xs: "0", sm: "0", md: "0", lg: "0", xl: "0" }}>
-                                                <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                    <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_LeftTop}>
-                                                        <Text as="p" variant="bodyMd">
-                                                            Product description
-                                                        </Text>
-                                                        <Text as="p" variant="headingXl">
-                                                            13
-                                                        </Text>
-                                                    </div>
-                                                </Grid.Cell>
-                                                <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                    <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_RightTop}>
-                                                        <Text as="p" variant="bodyMd">
-                                                            Product SEO description
-                                                        </Text>
-                                                        <Text as="p" variant="headingXl">
-                                                            1
-                                                        </Text>
-                                                    </div>
-                                                </Grid.Cell>
-                                                <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                    <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_LeftDown}>
-                                                        <Text as="p" variant="bodyMd">
-                                                            Collection description
-                                                        </Text>
-                                                        <Text as="p" variant="headingXl">
-                                                            0
-                                                        </Text>
-                                                    </div>
-                                                </Grid.Cell>
-                                                <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                    <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_RightDown}>
-                                                        <Text as="p" variant="bodyMd">
-                                                            Collection SEO description
-                                                        </Text>
-                                                        <Text as="p" variant="headingXl">
-                                                            0
-                                                        </Text>
-                                                    </div>
-                                                </Grid.Cell>
-                                            </Grid>
-                                        </div>
-                                    </BlockStack>
-                                </Card>
-                            </Grid.Cell>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 4 }}>
-                                <Box background="bg-surface" borderRadius="200" minHeight="100%" padding="400" overflowX="clip" overflowY="clip" borderColor="border">
-                                    <BlockStack gap="200">
-                                        <InlineStack gap="100">
-                                            <Box>
-                                                <Icon source={ClockIcon} tone="base" />
-                                            </Box>
-                                            <Text as="h2" variant="headingMd">
-                                                Time saved
-                                            </Text>
-                                        </InlineStack>
-                                        <div className={styles.Ciwi_Analytics_TimeSaved}>
-                                            <InlineStack gap="050" blockAlign="end" direction="row" align="center">
-                                                <Text as="p" variant="heading2xl">
-                                                    10
-                                                </Text>
-                                                <Text as="p" variant="bodyMd">
-                                                    hours
+                        <div>
+                            <Grid>
+                                <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 8 }}>
+                                    <Card>
+                                        <BlockStack gap="200">
+                                            <InlineStack gap="100">
+                                                <Box>
+                                                    <Icon source={WandIcon} tone="base" />
+                                                </Box>
+                                                <Text as="h2" variant="headingMd">
+                                                    Generated content
                                                 </Text>
                                             </InlineStack>
-                                        </div>
-                                    </BlockStack>
-                                </Box>
-                            </Grid.Cell>
-                        </Grid>
+                                            <div className={styles.Ciwi_Analytics_Metrics}>
+                                                <Grid columns={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }} gap={{ xs: "0", sm: "0", md: "0", lg: "0", xl: "0" }}>
+                                                    <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
+                                                        <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_LeftTop}>
+                                                            <Text as="p" variant="bodyMd">
+                                                                Product description
+                                                            </Text>
+                                                            <Text as="p" variant="headingXl">
+                                                                13
+                                                            </Text>
+                                                        </div>
+                                                    </Grid.Cell>
+                                                    <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
+                                                        <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_RightTop}>
+                                                            <Text as="p" variant="bodyMd">
+                                                                Product SEO description
+                                                            </Text>
+                                                            <Text as="p" variant="headingXl">
+                                                                1
+                                                            </Text>
+                                                        </div>
+                                                    </Grid.Cell>
+                                                    <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
+                                                        <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_LeftDown}>
+                                                            <Text as="p" variant="bodyMd">
+                                                                Collection description
+                                                            </Text>
+                                                            <Text as="p" variant="headingXl">
+                                                                0
+                                                            </Text>
+                                                        </div>
+                                                    </Grid.Cell>
+                                                    <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
+                                                        <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_RightDown}>
+                                                            <Text as="p" variant="bodyMd">
+                                                                Collection SEO description
+                                                            </Text>
+                                                            <Text as="p" variant="headingXl">
+                                                                0
+                                                            </Text>
+                                                        </div>
+                                                    </Grid.Cell>
+                                                </Grid>
+                                            </div>
+                                        </BlockStack>
+                                    </Card>
+                                </Grid.Cell>
+                                <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 4 }}>
+                                    <Card background="bg-surface" padding="400">
+                                        <BlockStack gap="200">
+                                            <InlineStack gap="100">
+                                                <Box>
+                                                    <Icon source={ClockIcon} tone="base" />
+                                                </Box>
+                                                <Text as="h2" variant="headingMd">
+                                                    Time saved
+                                                </Text>
+                                            </InlineStack>
+                                            <div className={styles.Ciwi_Analytics_TimeSaved}>
+                                                <InlineStack gap="050" blockAlign="end" direction="row" align="center">
+                                                    <Text as="p" variant="heading2xl">
+                                                        10
+                                                    </Text>
+                                                    <Text as="p" variant="bodyMd">
+                                                        hours
+                                                    </Text>
+                                                </InlineStack>
+                                            </div>
+                                        </BlockStack>
+                                    </Card>
+                                </Grid.Cell>
+                            </Grid>
+                        </div>
                     </Layout.Section>
                     <Layout.Section>
                         <Card>
@@ -367,7 +395,12 @@ export default function Index() {
                                                     { label: "Collection", value: "collection" },
                                                 ]}
                                                 value={pageType}
-                                                onChange={(value) => setPageType(value)}
+                                                onChange={(value) => {
+                                                    setPageType(value);
+                                                    setSelectedOptions([]);
+                                                    setTextValue("");
+                                                    isFirstLoad.current = true;
+                                                }}
                                             />
                                             <Select
                                                 label="Content type"
@@ -388,11 +421,16 @@ export default function Index() {
                                                     willLoadMoreResults={willLoadMoreResults}
                                                     textField={
                                                         <Autocomplete.TextField
-                                                            label="Product"
+                                                            label={pageType === "product" ? "Product" : "Collection"}
                                                             prefix={<Icon source={SearchIcon} tone="base" />}
-                                                            placeholder="Search Product"
+                                                            placeholder={pageType === "product" ? "Search Product" : "Search Collection"}
                                                             autoComplete="off"
                                                             error={productError}
+                                                            value={textValue}
+                                                            onChange={(value) => {
+                                                                setTextValue(value);
+                                                                isFirstLoad.current = true;
+                                                            }}
                                                         />
                                                     }
                                                 />

@@ -19,7 +19,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             id: id,
             pageType: pageType,
             contentType: contentType,
-            description: "This is a description",
+            description: `This is a ${pageType} ${contentType} description`,
         },
     };
 }; 
