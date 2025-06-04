@@ -1,9 +1,12 @@
-import { useFetcher, useNavigate } from "@remix-run/react";
+import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
 import { SaveBar } from "@shopify/app-bridge-react";
 import { ActionList, Autocomplete, AvatarProps, BlockStack, Box, Button, ButtonGroup, Card, FormLayout, Grid, Icon, IconProps, InlineStack, Layout, Page, Popover, Select, SkeletonBodyText, Text, TextField, Thumbnail, ThumbnailProps } from "@shopify/polaris";
 import { MagicIcon, SearchIcon, ChevronDownIcon, DeleteIcon, ClipboardIcon, ThumbsUpIcon, ThumbsDownIcon } from "@shopify/polaris-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./styles/styles.module.css";
+import { LoaderFunctionArgs } from "@remix-run/node";
+import axios from "axios";
+import { authenticate } from "app/shopify.server";
 
 const originalData = {
   name: "",
@@ -13,7 +16,18 @@ const originalData = {
   content: "",
 };
 
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const adminAuthResult = await authenticate.admin(request);
+  const { session } = adminAuthResult;
+
+  return {
+    shop: session.shop,
+    server: process.env.SERVER_URL,
+  };
+};
+
 const Index = () => {
+  const { shop, server } = useLoaderData<typeof loader>();
   const [updateData, setUpdateData] = useState(originalData);
   const [textValue, setTextValue] = useState<string>("");
   const [nameError, setNameError] = useState("");
@@ -29,7 +43,9 @@ const Index = () => {
   const [willLoadMoreResults, setWillLoadMoreResults] = useState(true);
   const [endCursor, setEndCursor] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [productError, setProductError] = useState("");
+  const [generateData, setGenerateData] = useState<string>("");
 
   const isFirstLoad = useRef(true);
   const selectedItem = useMemo(() => {
@@ -57,7 +73,6 @@ const Index = () => {
   const navigate = useNavigate();
 
   const fetcher = useFetcher<any>();
-  const generateFetcher = useFetcher<any>();
 
   useEffect(() => {
     if (updateData.pageType === "product") {
@@ -145,6 +160,38 @@ const Index = () => {
       }
     }
   }, [willLoadMoreResults, endCursor, options.length, updateData.pageType]);
+
+  const handleGenerate = useCallback(async () => {
+    let errors = false;
+    if (selectedOptions.length === 0) {
+      setProductError("Product is required");
+      errors = true;
+    } else {
+      setProductError("");
+    }
+    if (errors) {
+      return;
+    }
+    setIsGenerating(true);
+    const response = await axios.post(`${server}/apg/descriptionGeneration/generateDescription?shopName=${shop}`, {
+      pageType: updateData.pageType,
+      contentType: updateData.contentType,
+      id: selectedOptions[0],
+      seoKeyword: "",
+      templateId: updateData.content || 1,
+      additionalInformation: "",
+      language: language,
+      test: true,
+      model: "gpt-4o-mini",
+    });
+    if (response.data.success) {
+      setIsGenerating(false);
+      setGenerateData(response.data.response.description);
+    } else {
+      setIsGenerating(false);
+      setGenerateData("");
+    }
+  }, [selectedOptions, updateData, language]);
 
   return (
     <Page
@@ -308,34 +355,12 @@ const Index = () => {
                           </Popover>
                         </ButtonGroup>
                       </div>
-
                       <Button
                         fullWidth
                         variant="primary"
                         icon={MagicIcon}
-                        onClick={() => {
-                          let errors = false;
-                          if (selectedOptions.length === 0) {
-                            setProductError("Product is required");
-                            errors = true;
-                          } else {
-                            setProductError("");
-                          }
-                          if (errors) {
-                            return;
-                          }
-                          generateFetcher.submit({
-                            id: selectedOptions[0],
-                            pageType: updateData.pageType,
-                            contentType: updateData.contentType,
-                            seoKeyword: "",
-                            template: updateData.content,
-                            additionalInformation: "",
-                            test: false,
-                            language,
-                          }, { method: "POST", action: "/aiGenerateDescription" });
-                        }}
-                        loading={generateFetcher.state === "submitting"}
+                        onClick={handleGenerate}
+                        loading={isGenerating}
                       >
                         Generate
                       </Button>
@@ -344,17 +369,17 @@ const Index = () => {
                 </Grid.Cell>
                 <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 8 }}>
                   <div className={styles.Ciwi_QuickGenerator_Result + " " + styles.hasResult}>
-                    {!generateFetcher.data && generateFetcher.state !== "submitting" ? <div className={styles.Ciwi_QuickGenerator_Result_Empty}>
+                    {!generateData && !isGenerating ? <div className={styles.Ciwi_QuickGenerator_Result_Empty}>
                       <Text as="p" variant="bodyMd">
                         Generated content will appear here
                       </Text>
                     </div> : null}
-                    {generateFetcher.state === "submitting" ? <div className={styles.Ciwi_QuickGenerator_Result_Loading}>
+                    {isGenerating ? <div className={styles.Ciwi_QuickGenerator_Result_Loading}>
                       <SkeletonBodyText lines={10} />
                     </div> : null}
-                    {generateFetcher.data && generateFetcher.state !== "submitting" ? <div className={styles.Ciwi_QuickGenerator_Result_Content}>
+                    {generateData && !isGenerating ? <div className={styles.Ciwi_QuickGenerator_Result_Content}>
                       <div className={styles.Ciwi_QuickGenerator_Result_Markdown}>
-                        <div dangerouslySetInnerHTML={{ __html: generateFetcher.data.data.description }} />
+                        <div dangerouslySetInnerHTML={{ __html: generateData }} />
                       </div>
                       <div className={styles.Ciwi_QuickGenerator_Result_Feedback}>
                         <InlineStack gap="100">

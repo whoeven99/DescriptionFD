@@ -13,90 +13,66 @@ import {
   Tabs,
 } from "@shopify/polaris";
 import { authenticate } from "app/shopify.server";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import TemplateCard from "app/components/templateCard";
 import { Modal, TitleBar } from "@shopify/app-bridge-react";
-import { useNavigate } from "@remix-run/react";
+import { useLoaderData, useNavigate } from "@remix-run/react";
+import axios from "axios";
 
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-  return null;
+  const adminAuthResult = await authenticate.admin(request);
+  const { session } = adminAuthResult;
+  return {
+    shop: session.shop,
+    server: process.env.SERVER_URL,
+  };
 };
 
 const Index = () => {
+  const { shop, server } = useLoaderData<typeof loader>();
   const [mainSelected, setMainSelected] = useState(0);
   const [secondarySelected, setSecondarySelected] = useState(0);
   const [descriptionSelected, setDescriptionSelected] = useState<"Description" | "SEODescription">("Description");
   const [previewModal, setPreviewModal] = useState<any>(null);
   const [active, setActive] = useState<string | null>(null);
-  const [templates, setTemplates] = useState<any>({
-    0: {
-      Description: [
-        {
-          id: 0,
-          title: "Template 1",
-          description: "Template 1 description",
-          content: "Template 1 content",
-          type: "product",
-        },
-        {
-          id: 1,
-          title: "Template 2",
-          description: "Template 2 description",
-          content: "Template 2 content",
-          type: "collection",
-        }
-      ],
-      SEODescription: [
-        {
-          id: 2,
-          title: "Template 1",
-          description: "Template 1 description",
-          content: "Template 1 content",
-          type: "product",
-        }
-      ]
-    },
-    1: {
-      Description: [
-        {
-          id: 3,
-          title: "Template 1",
-          description: "Template 1 description",
-          content: "Template 1 content",
-          type: "product",
-        },
-        {
-          id: 4,
-          title: "Template 2",
-          description: "Template 2 description",
-          content: "Template 2 content",
-          type: "collection",
-        }
-      ],
-      SEODescription: [
-        {
-          id: 5,
-          title: "Template 1",
-          description: "Template 1 description",
-          content: "Template 1 content",
-          type: "product",
-        }
-      ]
-    },
-  });
+  const [templates, setTemplates] = useState<any>(null);
 
   const filterTemplates = useMemo(() => {
-    return templates[mainSelected][descriptionSelected].filter((template: any) => {
+    if (!templates) return [];
+    const list = templates[mainSelected]?.[descriptionSelected] || [];
+    return list.filter((template: any) => {
       if (secondarySelected === 0) return true; // "All" 标签
       if (secondarySelected === 1) return template.type === "product"; // "Product" 标签
       if (secondarySelected === 2) return template.type === "collection"; // "Collection" 标签
       return true;
     });
-  }, [mainSelected, descriptionSelected, secondarySelected]);  
+  }, [templates, mainSelected, descriptionSelected, secondarySelected]);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    async function fetchTemplates() {
+      const response = await axios.post(`${server}/apg/template/getAllTemplateData?shopName=${shop}`);
+      if (response.data.success) {
+        const data = response.data.response;
+        setTemplates({
+          0: {
+            Description: filterAndMapTemplates(data, "system", 0),
+            SEODescription: filterAndMapTemplates(data, "system", 1),
+          },
+          1: {
+            Description: filterAndMapTemplates(data, "custom", 0),
+            SEODescription: filterAndMapTemplates(data, "custom", 1),
+          },
+        });
+      } else {
+        setTemplates(null);
+      }
+    }
+    fetchTemplates();
+  }, []);
+
   const toggleActive = (id: string) => () => {
     setActive((activeId) => (activeId !== id ? id : null));
   };
@@ -164,12 +140,12 @@ const Index = () => {
       title="Template"
       subtitle="Customize and organize your content generation templates"
       compactTitle
-      primaryAction={{
-        content: "Create template",
-        onAction: () => {
-          navigate("/app/template/create");
-        },
-      }}
+    // primaryAction={{
+    //   content: "Create template",
+    //   onAction: () => {
+    //     navigate("/app/template/create");
+    //   },
+    // }}
     >
       <Card
         background="bg-surface"
@@ -248,6 +224,18 @@ const Index = () => {
       </Modal>
     </Page>
   );
+}
+
+export function filterAndMapTemplates(data: any[], shopName: string, seo: number) {
+  return data
+    .filter(item => (shopName === "system" ? item.shopName === "system" : item.shopName !== "system") && item.templateSeo === seo)
+    .map(item => ({
+      id: item.id,
+      title: item.templateTitle,
+      description: item.templateDescription,
+      content: item.templateData,
+      type: item.templateType ? "collection" : "product",
+    }));
 }
 
 export default Index;
