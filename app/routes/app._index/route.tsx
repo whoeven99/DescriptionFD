@@ -296,7 +296,6 @@ const Index = () => {
             test: false,
             model: "gpt-4o-mini",
         });
-        console.log(response.data.response.description);
         if (response.data.success) {
             setIsGenerating(false);
             setEditedData({
@@ -522,8 +521,19 @@ const Index = () => {
                                                 <Select
                                                     label="Language"
                                                     options={[
-                                                        { label: "English", value: "en" },
-                                                        { label: "French", value: "fr" },
+                                                        { label: "English", value: "English" },
+                                                        { label: "French", value: "French" },
+                                                        { label: "Spanish", value: "Spanish" },
+                                                        { label: "German", value: "German" },
+                                                        { label: "Italian", value: "Italian" },
+                                                        { label: "Portuguese", value: "Portuguese" },
+                                                        { label: "Dutch", value: "Dutch" },
+                                                        { label: "Japanese", value: "Japanese" },
+                                                        { label: "Chinese", value: "Chinese" },
+                                                        { label: "Russian", value: "Russian" },
+                                                        { label: "Serbian", value: "Serbian" },
+                                                        { label: "Turkish", value: "Turkish" },
+                                                        { label: "Tiếng Việt", value: "Tiếng Việt" },
                                                     ]}
                                                     value={language}
                                                     onChange={(value) => setLanguage(value)}

@@ -216,9 +216,9 @@ const Index = () => {
       </Card>
       <Modal id="preview-modal">
         <Box padding="400">
-          <p>{previewModal?.content}</p>
+          <div dangerouslySetInnerHTML={{ __html: previewModal?.content.replace(/\n/g, "<br/>") }} />
         </Box>
-        <TitleBar title="Title">
+        <TitleBar title={previewModal?.title}>
           <button onClick={handleClosePreview}>Close</button>
         </TitleBar>
       </Modal>
