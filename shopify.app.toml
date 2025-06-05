@@ -1,31 +1,37 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
-
-client_id = "39daa159f2b7655c3db7be497250afbd"
-name = "BogdaDescription"
-handle = "bogdadescription-1"
-application_url = "https://example.com/"
+client_id = "19d4f2ef1d1e42ee8e32766f2f2a3c96"
+name = "Ciwi.ai:PD(Test)"
+handle = "ciwi-ai-pdtest"
+application_url = "https://descriptionfd.onrender.com"
 embedded = true
 
 [build]
+automatically_update_urls_on_dev = true
+dev_store_url = "ciwishop.myshopify.com"
 include_config_on_deploy = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_locales,read_products,read_themes,write_products"
+
+[auth]
+redirect_urls = [
+  "https://descriptionfd.onrender.com/auth/callback",
+  "https://descriptionfd.onrender.com/auth/shopify/callback",
+  "https://descriptionfd.onrender.com/api/auth/callback"
+]
 
 [webhooks]
 api_version = "2025-04"
 
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
-
-  [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
-
-[access_scopes]
-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
-
-[auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/webhooks"
+compliance_topics = [
+  "customers/data_request",
+  "customers/redact",
+  "shop/redact"
+]
 
 [pos]
 embedded = false
