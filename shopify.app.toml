@@ -1,5 +1,4 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
-
 client_id = "19d4f2ef1d1e42ee8e32766f2f2a3c96"
 name = "Ciwi.ai:PD(Test)"
 handle = "ciwi-ai-pdtest"
@@ -25,13 +24,14 @@ redirect_urls = [
 [webhooks]
 api_version = "2025-04"
 
-  [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
-
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/webhooks"
+compliance_topics = [
+  "customers/data_request",
+  "customers/redact",
+  "shop/redact"
+]
 
 [pos]
 embedded = false
