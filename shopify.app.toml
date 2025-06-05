@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
-client_id = "19d4f2ef1d1e42ee8e32766f2f2a3c96"
-name = "Ciwi.ai:PD(Test)"
-handle = "ciwi-ai-pdtest"
+client_id = "b56a502400fe53e1f4cdfdb684929d2b"
+name = "Ciwi.ai:AI product"
+handle = "ciwi-ai-ai-product"
 application_url = "https://descriptionfd.onrender.com"
 embedded = true
 
