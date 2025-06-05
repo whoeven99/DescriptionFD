@@ -96,6 +96,7 @@ const Index = () => {
     const [seoKeyword, setSeoKeyword] = useState<string>("");
     const [additionalInformation, setAdditionalInformation] = useState<string>("");
     const [language, setLanguage] = useState<string>("en");
+    const [model, setModel] = useState<string>("GPT-4.1 Mini");
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
     const [options, setOptions] = useState<{
         id: string,
@@ -108,6 +109,7 @@ const Index = () => {
     const [loading, setLoading] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [modelPopoverActive, setModelPopoverActive] = useState(false);
     const [seoKeywordError, setSeoKeywordError] = useState("");
     const [productError, setProductError] = useState("");
     const [originalData, setOriginalData] = useState<any>(null);
@@ -241,6 +243,11 @@ const Index = () => {
         }
     }, [willLoadMoreResults, endCursor, options.length]);
 
+    const handleModelChange = useCallback((value: string) => {
+        setModel(value);
+        setModelPopoverActive(false);
+    }, []);
+
     const handlePublish = useCallback(() => {
         publishFetcher.submit({
             id: selectedOptions[0],
@@ -290,7 +297,7 @@ const Index = () => {
             contentType: contentType,
             id: selectedOptions[0],
             seoKeyword: seoKeyword,
-            templateId: 1,
+            templateId: template || 1,
             additionalInformation: additionalInformation,
             language: language,
             test: false,
@@ -334,7 +341,7 @@ const Index = () => {
         userCost && "productCounter" in userCost ?
             (<Page
                 title={`Hi ${shopOwnerName}!`}
-                subtitle="Welcome to the app"
+                subtitle="Welcome to our app! If you have any questions, feel free to email us at support@ciwi.ai, and we will respond as soon as possible."
                 compactTitle
             >
                 <BlockStack gap="500">
@@ -542,22 +549,23 @@ const Index = () => {
                                                     <div style={{ minWidth: "115px" }}>
                                                         <ButtonGroup variant="segmented">
                                                             <Popover
-                                                                active={false}
+                                                                active={modelPopoverActive}
                                                                 preferredAlignment="right"
                                                                 activator={
                                                                     <Button
                                                                         variant="tertiary"
-                                                                        icon={ChevronDownIcon}
+                                                                        onClick={() => setModelPopoverActive(!modelPopoverActive)}
+                                                                        disclosure
                                                                     >
-                                                                        GPT-4.1 Mini
+                                                                        {model}
                                                                     </Button>
                                                                 }
                                                                 autofocusTarget="first-node"
-                                                                onClose={() => { }}
+                                                                onClose={() => setModelPopoverActive(false)}
                                                             >
                                                                 <ActionList
                                                                     actionRole="menuitem"
-                                                                    items={[{ content: 'Save as draft' }]}
+                                                                    items={[{ content: 'GPT-4.1 Mini', onAction: () => handleModelChange("GPT-4.1 Mini") }]}
                                                                 />
                                                             </Popover>
                                                         </ButtonGroup>
