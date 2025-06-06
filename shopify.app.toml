@@ -1,6 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
 client_id = "b56a502400fe53e1f4cdfdb684929d2b"
-name = "Ciwi.ai:AI product"
+name = "Ciwi.ai:Product Description"
 handle = "ciwi-ai-ai-product"
 application_url = "https://descriptionfdprod.onrender.com"
 embedded = true
@@ -24,14 +25,10 @@ redirect_urls = [
 [webhooks]
 api_version = "2025-04"
 
-[[webhooks.subscriptions]]
-topics = ["app/uninstalled"]
-uri = "/webhooks"
-compliance_topics = [
-  "customers/data_request",
-  "customers/redact",
-  "shop/redact"
-]
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "webhooks"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
 
 [pos]
 embedded = false
