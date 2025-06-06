@@ -1,5 +1,15 @@
-import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, Outlet, useFetcher, useLoaderData, useRouteError } from "@remix-run/react";
+import type {
+  ActionFunctionArgs,
+  HeadersFunction,
+  LoaderFunctionArgs,
+} from "@remix-run/node";
+import {
+  Link,
+  Outlet,
+  useFetcher,
+  useLoaderData,
+  useRouteError,
+} from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
@@ -30,22 +40,27 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         shopOwnerName
         email
       }
-    }`
+    }`,
   );
   const data = await response.json();
   const graphqlData = data.data.shop;
-  await axios.post(`${process.env.SERVER_URL}/apg/userCounter/initUserCounter?shopName=${shopName}`);
-  await axios.post(`${process.env.SERVER_URL}/apg/users/insertOrUpdateApgUser?shopName=${shopName}`,
+  const response1 = await axios.get(
+    `${process.env.SERVER_URL}/apg/userCounter/initUserCounter?shopName=${shopName}`,
+  );
+  const response2 = await axios.post(
+    `${process.env.SERVER_URL}/apg/users/insertOrUpdateApgUser?shopName=${shopName}`,
     {
       shopName: shopName,
-      id: 0,
       accessToken: session?.accessToken,
       email: graphqlData.email,
       firstName: graphqlData.shopOwnerName.split(" ")[0],
-      lastName: graphqlData.shopOwnerName.split(" ")[1]
-    });
+      lastName: graphqlData.shopOwnerName.split(" ")[1],
+    },
+  );
+  console.log("response1: ", response1.data);
+  console.log("response2: ", response2.data);
   return null;
-}
+};
 
 export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
@@ -54,7 +69,7 @@ export default function App() {
   useEffect(() => {
     initFetcher.submit(null, {
       method: "POST",
-    })
+    });
   }, []);
 
   return (
