@@ -16,7 +16,7 @@ import { authenticate } from "app/shopify.server";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import TemplateCard from "app/components/templateCard";
 import { Modal, TitleBar } from "@shopify/app-bridge-react";
-import { useLoaderData, useNavigate } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import axios from "axios";
 
 
@@ -48,8 +48,6 @@ const Index = () => {
       return true;
     });
   }, [templates, mainSelected, descriptionSelected, secondarySelected]);
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchTemplates() {
