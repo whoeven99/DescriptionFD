@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import type { LoaderFunctionArgs } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import {
     Page,
@@ -28,7 +28,6 @@ import {
 import {
     SearchIcon,
     MagicIcon,
-    ChevronDownIcon,
     ClockIcon,
     WandIcon,
     DeleteIcon,
@@ -95,7 +94,7 @@ const Index = () => {
     const [template, setTemplate] = useState<string>("");
     const [seoKeyword, setSeoKeyword] = useState<string>("");
     const [additionalInformation, setAdditionalInformation] = useState<string>("");
-    const [language, setLanguage] = useState<string>("en");
+    const [language, setLanguage] = useState<string>("English");
     const [model, setModel] = useState<string>("GPT-4.1 Mini");
     const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
     const [options, setOptions] = useState<{
@@ -178,6 +177,15 @@ const Index = () => {
     }, [pageType, textValue]);
 
     useEffect(() => {
+        if (!templates) return;
+        console.log(templates);
+        const templateId = templates?.[0]?.[contentType]?.find(
+            (template: any) => template.type === pageType
+        )?.id;
+        setTemplate(templateId);
+    }, [pageType, contentType, templates]);
+
+    useEffect(() => {
         if (fetcher.data) {
             if (fetcher.data.success) {
                 setLoading(false);
@@ -198,7 +206,7 @@ const Index = () => {
         (selected: string[]) => {
             setSelectedOptions(selected);
             if (selected.length === 0) {
-                setProductError("Product is required");
+                setProductError(`${pageType === "product" ? "Product" : "Collection"} is required`);
             } else {
                 setProductError("");
             }
@@ -282,7 +290,7 @@ const Index = () => {
             setSeoKeywordError("");
         }
         if (selectedOptions.length === 0) {
-            setProductError("Product is required");
+            setProductError(`${pageType === "product" ? "Product" : "Collection"} is required`);
             errors = true;
         } else {
             setProductError("");
@@ -334,6 +342,9 @@ const Index = () => {
                     collectionSeoCounter: userCost.collectionSeoCounter + 1,
                 });
             }
+        } else {
+            setIsGenerating(false);
+            shopify.toast.show("Failed to generate description");
         }
     }, [selectedOptions, pageType, contentType, seoKeyword, additionalInformation, language, template]);
 
@@ -455,7 +466,7 @@ const Index = () => {
                                                     label="Page type"
                                                     options={[
                                                         { label: "Product", value: "product" },
-                                                        // { label: "Collection", value: "collection" },
+                                                        { label: "Collection", value: "collection" },
                                                     ]}
                                                     value={pageType}
                                                     onChange={(value) => {
@@ -469,7 +480,7 @@ const Index = () => {
                                                     label="Content type"
                                                     options={[
                                                         { label: "Description", value: "Description" },
-                                                        // { label: "SEO description", value: "SEODescription" },
+                                                        { label: "SEO description", value: "SEODescription" },
                                                     ]}
                                                     value={contentType}
                                                     onChange={(value) => setContentType(value as "Description" | "SEODescription")}
