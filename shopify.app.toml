@@ -1,14 +1,10 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "ade848cd9472eb0f027309f702e2b68a"
-name = "Ciwi.ai:PD(Local)"
-handle = "ciwi-ai-pdlocal"
-application_url = "https://8ae5aba2ef64.ngrok.app"
+client_id = "19d4f2ef1d1e42ee8e32766f2f2a3c96"
+name = "Ciwi.ai:PD(Test)"
+handle = "ciwi-ai-pdtest"
+application_url = "https://descriptionfd.onrender.com"
 embedded = true
-
-[build]
-automatically_update_urls_on_dev = true
-dev_store_url = "ciwishop.myshopify.com"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -16,9 +12,9 @@ scopes = "read_locales,read_products,read_themes,write_products"
 
 [auth]
 redirect_urls = [
-  "https://8ae5aba2ef64.ngrok.app/auth/callback",
-  "https://8ae5aba2ef64.ngrok.app/auth/shopify/callback",
-  "https://8ae5aba2ef64.ngrok.app/api/auth/callback"
+  "https://descriptionfd.onrender.com/auth/callback",
+  "https://descriptionfd.onrender.com/auth/shopify/callback",
+  "https://descriptionfd.onrender.com/api/auth/callback"
 ]
 
 [webhooks]
