@@ -261,7 +261,7 @@ const Index = () => {
             id: selectedOptions[0],
             pageType: editedData.pageType,
             contentType: editedData.contentType,
-            description: editedData.description,
+            description: contentType === "SEODescription" ? removeHtmlTags(editedData.description) : editedData.description,
         }, { method: "POST", action: "/descriptionPublish" });
     }, [selectedOptions, editedData]);
 
@@ -657,5 +657,11 @@ const Index = () => {
             </div>
     )
 }
+
+export const removeHtmlTags = (str: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(str, 'text/html');
+    return doc.body.textContent || '';
+};
 
 export default Index;
