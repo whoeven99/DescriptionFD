@@ -626,11 +626,11 @@ const Index = () => {
                                                                     <Button onClick={handlePublish} loading={publishFetcher.state === "submitting"}>Publish</Button>
                                                                     <Button onClick={handleEdit}>Edit</Button>
                                                                 </ButtonGroup>
-                                                                <InlineStack gap="100">
+                                                                {/* <InlineStack gap="100">
                                                                     <Button icon={ClipboardIcon} variant="tertiary" />
                                                                     <Button icon={ThumbsUpIcon} variant="tertiary" />
                                                                     <Button icon={ThumbsDownIcon} variant="tertiary" />
-                                                                </InlineStack>
+                                                                </InlineStack> */}
                                                             </>
                                                         }
                                                     </div>
