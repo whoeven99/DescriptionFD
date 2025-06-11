@@ -107,11 +107,11 @@ const Index = () => {
       accessibilityLabel: 'System',
       panelID: 'system-templates',
     },
-    {
-      id: 'custom-templates',
-      content: 'Custom',
-      panelID: 'custom-templates',
-    },
+    // {
+    //   id: 'cust  om-templates',
+    //   content: 'Custom',
+    //   panelID: 'custom-templates',
+    // },
   ];
 
   const secondaryTabs = [
