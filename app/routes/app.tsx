@@ -34,7 +34,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   );
   const data = await response.json();
   const graphqlData = data.data.shop;
-  await axios.post(`${process.env.SERVER_URL}/apg/userCounter/initUserCounter?shopName=${shopName}`);
+  await axios.get(`${process.env.SERVER_URL}/apg/userCounter/initUserCounter?shopName=${shopName}`);
   await axios.post(`${process.env.SERVER_URL}/apg/users/insertOrUpdateApgUser?shopName=${shopName}`,
     {
       shopName: shopName,
@@ -63,7 +63,9 @@ export default function App() {
         <Link to="/app" rel="home">
           Home
         </Link>
+        <Link to="/app/batchGeneration">Batch Generation</Link>
         <Link to="/app/template">Template</Link>
+        <Link to="/app/contentManagement">Content Management</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>

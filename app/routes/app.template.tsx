@@ -16,9 +16,8 @@ import { authenticate } from "app/shopify.server";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import TemplateCard from "app/components/templateCard";
 import { Modal, TitleBar } from "@shopify/app-bridge-react";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useNavigate } from "@remix-run/react";
 import axios from "axios";
-
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const adminAuthResult = await authenticate.admin(request);
@@ -30,10 +29,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 const Index = () => {
+  const navigate = useNavigate();
   const { shop, server } = useLoaderData<typeof loader>();
   const [mainSelected, setMainSelected] = useState(0);
   const [secondarySelected, setSecondarySelected] = useState(0);
-  const [descriptionSelected, setDescriptionSelected] = useState<"Description" | "SEODescription">("Description");
+  const [descriptionSelected, setDescriptionSelected] = useState<
+    "Description" | "SEODescription"
+  >("Description");
   const [previewModal, setPreviewModal] = useState<any>(null);
   const [active, setActive] = useState<string | null>(null);
   const [templates, setTemplates] = useState<any>(null);
@@ -51,7 +53,9 @@ const Index = () => {
 
   useEffect(() => {
     async function fetchTemplates() {
-      const response = await axios.post(`${server}/apg/template/getAllTemplateData?shopName=${shop}`);
+      const response = await axios.post(
+        `${server}/apg/template/getAllTemplateData?shopName=${shop}`,
+      );
       if (response.data.success) {
         const data = response.data.response;
         setTemplates({
@@ -92,44 +96,44 @@ const Index = () => {
 
   const handlePreview = (template: any) => {
     setPreviewModal(template);
-    shopify.modal.show('preview-modal');
+    shopify.modal.show("preview-modal");
   };
 
   const handleClosePreview = () => {
     setPreviewModal(null);
-    shopify.modal.hide('preview-modal');
+    shopify.modal.hide("preview-modal");
   };
 
   const mainTabs = [
     {
-      id: 'system-templates',
-      content: 'System',
-      accessibilityLabel: 'System',
-      panelID: 'system-templates',
+      id: "system-templates",
+      content: "System",
+      accessibilityLabel: "System",
+      panelID: "system-templates",
     },
-    // {
-    //   id: 'cust  om-templates',
-    //   content: 'Custom',
-    //   panelID: 'custom-templates',
-    // },
+    {
+      id: "custom-templates",
+      content: "Custom",
+      panelID: "custom-templates",
+    },
   ];
 
   const secondaryTabs = [
     {
-      id: 'all-templates',
-      content: 'All',
-      accessibilityLabel: 'All',
-      panelID: 'all-templates',
+      id: "all-templates",
+      content: "All",
+      accessibilityLabel: "All",
+      panelID: "all-templates",
     },
     {
-      id: 'product-templates',
-      content: 'Product',
-      panelID: 'product-templates',
+      id: "product-templates",
+      content: "Product",
+      panelID: "product-templates",
     },
     {
-      id: 'collection-templates',
-      content: 'Collection',
-      panelID: 'collection-templates',
+      id: "collection-templates",
+      content: "Collection",
+      panelID: "collection-templates",
     },
   ];
 
@@ -138,54 +142,65 @@ const Index = () => {
       title="Template"
       subtitle="Customize and organize your content generation templates"
       compactTitle
-    // primaryAction={{
-    //   content: "Create template",
-    //   onAction: () => {
-    //     navigate("/app/template/create");
-    //   },
-    // }}
+      primaryAction={{
+        content: "Create template",
+        onAction: () => {
+          navigate("/app/template/create");
+        },
+      }}
     >
-      <Card
-        background="bg-surface"
-        padding={"200"}
-      >
+      <Card background="bg-surface" padding={"200"}>
         <Box>
-          <Tabs tabs={mainTabs} selected={mainSelected} onSelect={handleMainTabChange} />
+          <Tabs
+            tabs={mainTabs}
+            selected={mainSelected}
+            onSelect={handleMainTabChange}
+          />
         </Box>
         <InlineStack align="space-between" wrap={false} direction="row">
-          <Tabs tabs={secondaryTabs} selected={secondarySelected} onSelect={handleSecondaryTabChange} />
+          <Tabs
+            tabs={secondaryTabs}
+            selected={secondarySelected}
+            onSelect={handleSecondaryTabChange}
+          />
           <Box paddingInlineEnd={{ xs: "200" }}>
             <ButtonGroup variant="segmented">
               <Popover
-                active={active === 'popover1'}
+                active={active === "popover1"}
                 preferredAlignment="right"
                 activator={
                   <Button
                     variant="tertiary"
-                    onClick={toggleActive('popover1')}
+                    onClick={toggleActive("popover1")}
                     disclosure
                   >
-                    {descriptionSelected == "SEODescription" ? "SEO Description" : "Description"}
+                    {descriptionSelected == "SEODescription"
+                      ? "SEO Description"
+                      : "Description"}
                   </Button>
                 }
                 autofocusTarget="first-node"
-                onClose={toggleActive('popover1')}
+                onClose={toggleActive("popover1")}
               >
                 <ActionList
                   actionRole="menuitem"
                   items={[
-                    { content: 'Description', onAction: () => handleDescriptionChange('Description') },
-                    { content: 'SEO Description', onAction: () => handleDescriptionChange('SEODescription') }
+                    {
+                      content: "Description",
+                      onAction: () => handleDescriptionChange("Description"),
+                    },
+                    {
+                      content: "SEO Description",
+                      onAction: () => handleDescriptionChange("SEODescription"),
+                    },
                   ]}
                 />
               </Popover>
             </ButtonGroup>
           </Box>
         </InlineStack>
-        <Box
-          padding={"200"}
-        >
-          {filterTemplates?.length > 0 ?
+        <Box padding={"200"}>
+          {filterTemplates?.length > 0 ? (
             <Grid>
               {filterTemplates.map((template: any) => (
                 <Grid.Cell
@@ -201,20 +216,29 @@ const Index = () => {
                 </Grid.Cell>
               ))}
             </Grid>
-            : (
-              <Box paddingBlockStart={"2000"} paddingBlockEnd={"2000"}>
-                <InlineStack align="center" direction="row" wrap={true}>
-                  <BlockStack gap="200" align="center" inlineAlign="center" reverseOrder>
-                    <p>No templates found</p>
-                  </BlockStack>
-                </InlineStack>
-              </Box>
-            )}
+          ) : (
+            <Box paddingBlockStart={"2000"} paddingBlockEnd={"2000"}>
+              <InlineStack align="center" direction="row" wrap={true}>
+                <BlockStack
+                  gap="200"
+                  align="center"
+                  inlineAlign="center"
+                  reverseOrder
+                >
+                  <p>No templates found</p>
+                </BlockStack>
+              </InlineStack>
+            </Box>
+          )}
         </Box>
       </Card>
       <Modal id="preview-modal">
         <Box padding="400">
-          <div dangerouslySetInnerHTML={{ __html: previewModal?.content.replace(/\n/g, "<br/>") }} />
+          <div
+            dangerouslySetInnerHTML={{
+              __html: previewModal?.content.replace(/\n/g, "<br/>"),
+            }}
+          />
         </Box>
         <TitleBar title={previewModal?.title}>
           <button onClick={handleClosePreview}>Close</button>
@@ -222,17 +246,25 @@ const Index = () => {
       </Modal>
     </Page>
   );
-}
+};
 
-export function filterAndMapTemplates(data: any[], shopName: string, seo: number) {
+export function filterAndMapTemplates(
+  data: any[],
+  shopName: string,
+  seo: number,
+) {
   return data
-    .filter(item => (shopName === "system" ? item.shopName === "system" : item.shopName !== "system") && item.templateSeo === seo)
-    .map(item => ({
+    .filter(
+      (item) =>
+        (shopName === "system" ? !item.templateClass : item.templateClass) &&
+        item.templateSeo === seo,
+    )
+    .map((item) => ({
       id: item.id,
       title: item.templateTitle,
       description: item.templateDescription,
       content: item.templateData,
-      type: item.templateType ? "collection" : "product",
+      type: "product",
     }));
 }
 
