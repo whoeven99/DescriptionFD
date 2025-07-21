@@ -39,7 +39,7 @@ import styles from "./styles/styles.module.css";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import axios from "axios";
 import { authenticate } from "app/shopify.server";
-import { generateDescription } from "app/api/JavaServer";
+import { GenerateDescription } from "app/api/JavaServer";
 
 const originalData = {
   name: "",
@@ -251,18 +251,21 @@ const Index = () => {
       return;
     }
     setIsGenerating(true);
-    const response = await generateDescription({
+    const response = await GenerateDescription({
       server: server as string,
       shop: shop as string,
       pageType: updateData.pageType,
       contentType: updateData.contentType,
-      selectedOptions: selectedOptions,
-      seoKeyword: "",
-      template: updateData.content || "1",
-      additionalInformation: "",
-      language: language,
-      test: true,
+      productId: selectedOptions[0],
+      languageStyle: "",
+      brandStyle: "",
+      templateId: 1,
+      templateType: true,
       model: "gpt-4o-mini",
+      language: language,
+      seoKeywords: "",
+      brandWord: "",
+      brandSlogan: "",
     });
     if (response.success) {
       setIsGenerating(false);
