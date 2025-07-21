@@ -1,12 +1,45 @@
 import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
 import { SaveBar } from "@shopify/app-bridge-react";
-import { ActionList, Autocomplete, AvatarProps, BlockStack, Box, Button, ButtonGroup, Card, FormLayout, Grid, Icon, IconProps, InlineStack, Layout, Page, Popover, Select, SkeletonBodyText, Text, TextField, Thumbnail, ThumbnailProps } from "@shopify/polaris";
-import { MagicIcon, SearchIcon, ChevronDownIcon, DeleteIcon, ClipboardIcon, ThumbsUpIcon, ThumbsDownIcon } from "@shopify/polaris-icons";
+import {
+  ActionList,
+  Autocomplete,
+  AvatarProps,
+  BlockStack,
+  Box,
+  Button,
+  ButtonGroup,
+  Card,
+  Divider,
+  FormLayout,
+  Grid,
+  Icon,
+  IconProps,
+  InlineStack,
+  Layout,
+  Page,
+  Popover,
+  Select,
+  SkeletonBodyText,
+  Text,
+  TextField,
+  Thumbnail,
+  ThumbnailProps,
+} from "@shopify/polaris";
+import {
+  MagicIcon,
+  SearchIcon,
+  ChevronDownIcon,
+  DeleteIcon,
+  ClipboardIcon,
+  ThumbsUpIcon,
+  ThumbsDownIcon,
+} from "@shopify/polaris-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./styles/styles.module.css";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import axios from "axios";
 import { authenticate } from "app/shopify.server";
+import { generateDescription } from "app/api/JavaServer";
 
 const originalData = {
   name: "",
@@ -33,12 +66,14 @@ const Index = () => {
   const [nameError, setNameError] = useState("");
   const [contentError, setContentError] = useState("");
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [options, setOptions] = useState<{
-    id: string,
-    label: string,
-    value: string,
-    media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps>
-  }[]>([]);
+  const [options, setOptions] = useState<
+    {
+      id: string;
+      label: string;
+      value: string;
+      media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps>;
+    }[]
+  >([]);
   const [language, setLanguage] = useState<string>("en");
   const [willLoadMoreResults, setWillLoadMoreResults] = useState(true);
   const [endCursor, setEndCursor] = useState(null);
@@ -49,25 +84,48 @@ const Index = () => {
 
   const isFirstLoad = useRef(true);
   const selectedItem = useMemo(() => {
-    const selectedOption = options.find((option: { id: string; label: string; value: string; media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps> }) => {
-      return selectedOptions.includes(option.value);
-    });
-    return (
-      selectedOption ? <Box padding="400" background="bg-surface-secondary" borderRadius="200">
-        <InlineStack gap="400" align="space-between" blockAlign="center" direction="row" wrap={false}>
-          <InlineStack gap="400" align="center" blockAlign="center" direction="row" wrap={false}>
+    const selectedOption = options.find(
+      (option: {
+        id: string;
+        label: string;
+        value: string;
+        media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps>;
+      }) => {
+        return selectedOptions.includes(option.value);
+      },
+    );
+    return selectedOption ? (
+      <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+        <InlineStack
+          gap="400"
+          align="space-between"
+          blockAlign="center"
+          direction="row"
+          wrap={false}
+        >
+          <InlineStack
+            gap="400"
+            align="center"
+            blockAlign="center"
+            direction="row"
+            wrap={false}
+          >
             {/* <Icon source={SearchIcon} tone="base" /> */}
             {selectedOption?.media}
             <Text as="p" variant="bodyMd">
               {selectedOption?.label}
             </Text>
           </InlineStack>
-          <Button icon={DeleteIcon} variant="tertiary" onClick={() => {
-            setSelectedOptions([]);
-          }} />
+          <Button
+            icon={DeleteIcon}
+            variant="tertiary"
+            onClick={() => {
+              setSelectedOptions([]);
+            }}
+          />
         </InlineStack>
-      </Box> : null
-    )
+      </Box>
+    ) : null;
   }, [options, selectedOptions]);
 
   const navigate = useNavigate();
@@ -79,14 +137,20 @@ const Index = () => {
       setOptions([]);
       setLoading(true);
       if (isFirstLoad.current) {
-        fetcher.submit({ query: textValue }, { method: "POST", action: "/getProductInfo" });
+        fetcher.submit(
+          { query: textValue },
+          { method: "POST", action: "/getProductInfo" },
+        );
         isFirstLoad.current = false;
       }
     } else {
       setOptions([]);
       setLoading(true);
       if (isFirstLoad.current) {
-        fetcher.submit({ query: textValue }, { method: "POST", action: "/getCollectionInfo" });
+        fetcher.submit(
+          { query: textValue },
+          { method: "POST", action: "/getCollectionInfo" },
+        );
         isFirstLoad.current = false;
       }
     }
@@ -97,7 +161,15 @@ const Index = () => {
       console.log("fetcher.data: ", fetcher.data);
       if (fetcher.data.success) {
         setLoading(false);
-        setOptions((prev) => [...prev, ...fetcher.data!.response.data.map((item: any) => ({ id: item.id, label: item.title, value: item.id, media: <Thumbnail source={item.image} alt={item.title} /> }))]);
+        setOptions((prev) => [
+          ...prev,
+          ...fetcher.data!.response.data.map((item: any) => ({
+            id: item.id,
+            label: item.title,
+            value: item.id,
+            media: <Thumbnail source={item.image} alt={item.title} />,
+          })),
+        ]);
         setWillLoadMoreResults(fetcher.data!.response.hasNextPage);
         setEndCursor(fetcher.data!.response.endCursor);
       }
@@ -106,9 +178,9 @@ const Index = () => {
 
   useEffect(() => {
     if (JSON.stringify(updateData) !== JSON.stringify(originalData)) {
-      shopify.saveBar.show('template-create-save-bar');
+      shopify.saveBar.show("template-create-save-bar");
     } else {
-      shopify.saveBar.hide('template-create-save-bar');
+      shopify.saveBar.hide("template-create-save-bar");
     }
   }, [updateData]);
 
@@ -126,12 +198,12 @@ const Index = () => {
     if (nameError || contentError) {
       return;
     }
-    shopify.saveBar.hide('template-create-save-bar');
+    shopify.saveBar.hide("template-create-save-bar");
   };
 
   const handleDiscard = () => {
     setUpdateData(originalData);
-    shopify.saveBar.hide('template-create-save-bar');
+    shopify.saveBar.hide("template-create-save-bar");
   };
 
   const updateSelection = useCallback(
@@ -151,11 +223,17 @@ const Index = () => {
       setLoading(true);
       if (updateData.pageType === "product") {
         setTimeout(() => {
-          fetcher.submit({ endCursor: endCursor }, { method: "POST", action: "/getProductInfo" });
+          fetcher.submit(
+            { endCursor: endCursor },
+            { method: "POST", action: "/getProductInfo" },
+          );
         }, 1000);
       } else {
         setTimeout(() => {
-          fetcher.submit({ endCursor: endCursor }, { method: "POST", action: "/getCollectionInfo" });
+          fetcher.submit(
+            { endCursor: endCursor },
+            { method: "POST", action: "/getCollectionInfo" },
+          );
         }, 1000);
       }
     }
@@ -173,25 +251,35 @@ const Index = () => {
       return;
     }
     setIsGenerating(true);
-    const response = await axios.post(`${server}/apg/descriptionGeneration/generateDescription?shopName=${shop}`, {
+    const response = await generateDescription({
+      server: server as string,
+      shop: shop as string,
       pageType: updateData.pageType,
       contentType: updateData.contentType,
-      id: selectedOptions[0],
+      selectedOptions: selectedOptions,
       seoKeyword: "",
-      templateId: updateData.content || 1,
+      template: updateData.content || "1",
       additionalInformation: "",
       language: language,
       test: true,
       model: "gpt-4o-mini",
     });
-    if (response.data.success) {
+    if (response.success) {
       setIsGenerating(false);
-      setGenerateData(response.data.response.description);
+      setGenerateData(response.response.description);
     } else {
       setIsGenerating(false);
       setGenerateData("");
     }
   }, [selectedOptions, updateData, language]);
+
+  const filterTemplates = [
+    { id: 1, title: "Template 1" },
+    { id: 2, title: "Template 2" },
+    { id: 3, title: "Template 3" },
+  ];
+
+  const [template, setTemplate] = useState<string>("1");
 
   return (
     <Page
@@ -200,7 +288,7 @@ const Index = () => {
       compactTitle
       backAction={{
         onAction: () => {
-          shopify.saveBar.hide('template-create-save-bar');
+          shopify.saveBar.hide("template-create-save-bar");
           navigate("/app/template");
         },
       }}
@@ -219,7 +307,9 @@ const Index = () => {
                   label="Template name"
                   autoComplete="off"
                   value={updateData.name}
-                  onChange={(value) => setUpdateData({ ...updateData, name: value })}
+                  onChange={(value) =>
+                    setUpdateData({ ...updateData, name: value })
+                  }
                   error={nameError}
                 />
               </FormLayout>
@@ -230,7 +320,9 @@ const Index = () => {
                   label="Template description"
                   autoComplete="off"
                   value={updateData.description}
-                  onChange={(value) => setUpdateData({ ...updateData, description: value })}
+                  onChange={(value) =>
+                    setUpdateData({ ...updateData, description: value })
+                  }
                 />
               </FormLayout>
               <FormLayout>
@@ -255,7 +347,9 @@ const Index = () => {
                   name="contentType"
                   label="Content type"
                   value={updateData.contentType}
-                  onChange={(value) => setUpdateData({ ...updateData, contentType: value })}
+                  onChange={(value) =>
+                    setUpdateData({ ...updateData, contentType: value })
+                  }
                   options={[
                     { label: "Description", value: "Description" },
                     { label: "SEO Description", value: "SEODescription" },
@@ -270,7 +364,9 @@ const Index = () => {
                   multiline={4}
                   autoComplete="off"
                   value={updateData.content}
-                  onChange={(value) => setUpdateData({ ...updateData, content: value })}
+                  onChange={(value) =>
+                    setUpdateData({ ...updateData, content: value })
+                  }
                   error={contentError}
                 />
               </FormLayout>
@@ -289,16 +385,15 @@ const Index = () => {
                   <BlockStack gap="400">
                     <InlineStack gap="100">
                       <Box>
-                        <Icon
-                          source={MagicIcon}
-                          tone="base"
-                        />
+                        <Icon source={MagicIcon} tone="base" />
                       </Box>
                       <Text as="h2" variant="headingMd">
                         Test template
                       </Text>
                     </InlineStack>
-                    {selectedItem ? selectedItem :
+                    {selectedItem ? (
+                      selectedItem
+                    ) : (
                       <Autocomplete
                         options={options}
                         selected={selectedOptions}
@@ -308,9 +403,17 @@ const Index = () => {
                         willLoadMoreResults={willLoadMoreResults}
                         textField={
                           <Autocomplete.TextField
-                            label={updateData.pageType === "product" ? "Product" : "Collection"}
+                            label={
+                              updateData.pageType === "product"
+                                ? "Product"
+                                : "Collection"
+                            }
                             prefix={<Icon source={SearchIcon} tone="base" />}
-                            placeholder={updateData.pageType === "product" ? "Search Product" : "Search Collection"}
+                            placeholder={
+                              updateData.pageType === "product"
+                                ? "Search Product"
+                                : "Search Collection"
+                            }
                             autoComplete="off"
                             error={productError}
                             value={textValue}
@@ -321,40 +424,89 @@ const Index = () => {
                           />
                         }
                       />
-                    }
+                    )}
+                    <Divider borderColor="border" />
+                    <BlockStack gap="200">
+                      <Text variant="bodyLg" as="p">
+                        AI Generation Settings
+                      </Text>
+
+                      <Select
+                        label="Brand style"
+                        options={filterTemplates.map((template: any) => ({
+                          label: template.title,
+                          value: template.id,
+                        }))}
+                        value={template}
+                        onChange={(value) => setTemplate(value)}
+                      />
+
+                      <Select
+                        label="Language style"
+                        options={filterTemplates.map((template: any) => ({
+                          label: template.title,
+                          value: template.id,
+                        }))}
+                        value={template}
+                        onChange={(value) => setTemplate(value)}
+                      />
+
+                      <Select
+                        label="Model selection"
+                        options={filterTemplates.map((template: any) => ({
+                          label: template.title,
+                          value: template.id,
+                        }))}
+                        value={template}
+                        onChange={(value) => setTemplate(value)}
+                      />
+                    </BlockStack>
+                    <Divider borderColor="border" />
+                    <BlockStack gap="200">
+                      <Text variant="bodyLg" as="p">
+                        SEO optimization rules
+                      </Text>
+                      <Select
+                        label="Brand word"
+                        options={filterTemplates.map((template: any) => ({
+                          label: template.title,
+                          value: template.id,
+                        }))}
+                        value={template}
+                        onChange={(value) => setTemplate(value)}
+                      />
+                      <Select
+                        label="Keywords"
+                        options={filterTemplates.map((template: any) => ({
+                          label: template.title,
+                          value: template.id,
+                        }))}
+                        value={template}
+                        onChange={(value) => setTemplate(value)}
+                      />
+                    </BlockStack>
+                    <Divider borderColor="border" />
                     <Select
                       label="Language"
                       options={[
-                        { label: "English", value: "en" },
-                        { label: "French", value: "fr" },
+                        { label: "English", value: "English" },
+                        { label: "French", value: "French" },
+                        { label: "Spanish", value: "Spanish" },
+                        { label: "German", value: "German" },
+                        { label: "Italian", value: "Italian" },
+                        { label: "Portuguese", value: "Portuguese" },
+                        { label: "Dutch", value: "Dutch" },
+                        { label: "Japanese", value: "Japanese" },
+                        { label: "Chinese", value: "Chinese" },
+                        { label: "Russian", value: "Russian" },
+                        { label: "Serbian", value: "Serbian" },
+                        { label: "Turkish", value: "Turkish" },
+                        { label: "Tiếng Việt", value: "Tiếng Việt" },
                       ]}
                       value={language}
                       onChange={(value) => setLanguage(value)}
                     />
                     <InlineStack gap="200" wrap={false}>
-                      <div style={{ minWidth: "115px" }}>
-                        <ButtonGroup variant="segmented">
-                          <Popover
-                            active={false}
-                            preferredAlignment="right"
-                            activator={
-                              <Button
-                                variant="tertiary"
-                                icon={ChevronDownIcon}
-                              >
-                                GPT-4.1 Mini
-                              </Button>
-                            }
-                            autofocusTarget="first-node"
-                            onClose={() => { }}
-                          >
-                            <ActionList
-                              actionRole="menuitem"
-                              items={[{ content: 'Save as draft' }]}
-                            />
-                          </Popover>
-                        </ButtonGroup>
-                      </div>
                       <Button
                         fullWidth
                         variant="primary"
@@ -368,34 +520,53 @@ const Index = () => {
                   </BlockStack>
                 </Grid.Cell>
                 <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 8 }}>
-                  <div className={styles.Ciwi_QuickGenerator_Result + " " + styles.hasResult}>
-                    {!generateData && !isGenerating ? <div className={styles.Ciwi_QuickGenerator_Result_Empty}>
-                      <Text as="p" variant="bodyMd">
-                        Generated content will appear here
-                      </Text>
-                    </div> : null}
-                    {isGenerating ? <div className={styles.Ciwi_QuickGenerator_Result_Loading}>
-                      <SkeletonBodyText lines={10} />
-                    </div> : null}
-                    {generateData && !isGenerating ? <div className={styles.Ciwi_QuickGenerator_Result_Content}>
-                      <div className={styles.Ciwi_QuickGenerator_Result_Markdown}>
-                        <div dangerouslySetInnerHTML={{ __html: generateData }} />
+                  <div
+                    className={
+                      styles.Ciwi_QuickGenerator_Result + " " + styles.hasResult
+                    }
+                  >
+                    {!generateData && !isGenerating ? (
+                      <div className={styles.Ciwi_QuickGenerator_Result_Empty}>
+                        <Text as="p" variant="bodyMd">
+                          Generated content will appear here
+                        </Text>
                       </div>
-                      <div className={styles.Ciwi_QuickGenerator_Result_Feedback}>
-                        <InlineStack gap="100">
-                          <Button icon={ClipboardIcon} variant="tertiary" />
-                          <Button icon={ThumbsUpIcon} variant="tertiary" />
-                          <Button icon={ThumbsDownIcon} variant="tertiary" />
-                        </InlineStack>
+                    ) : null}
+                    {isGenerating ? (
+                      <div
+                        className={styles.Ciwi_QuickGenerator_Result_Loading}
+                      >
+                        <SkeletonBodyText lines={10} />
                       </div>
-                    </div> : null}
+                    ) : null}
+                    {generateData && !isGenerating ? (
+                      <div
+                        className={styles.Ciwi_QuickGenerator_Result_Content}
+                      >
+                        <div
+                          className={styles.Ciwi_QuickGenerator_Result_Markdown}
+                        >
+                          <div
+                            dangerouslySetInnerHTML={{ __html: generateData }}
+                          />
+                        </div>
+                        <div
+                          className={styles.Ciwi_QuickGenerator_Result_Feedback}
+                        >
+                          <InlineStack gap="100">
+                            <Button icon={ClipboardIcon} variant="tertiary" />
+                            <Button icon={ThumbsUpIcon} variant="tertiary" />
+                            <Button icon={ThumbsDownIcon} variant="tertiary" />
+                          </InlineStack>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </Grid.Cell>
               </Grid>
             </BlockStack>
           </Card>
         </Layout.Section>
-
       </Layout>
     </Page>
   );

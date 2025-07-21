@@ -1,667 +1,1669 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import { useFetcher, useLoaderData, useLocation } from "@remix-run/react";
 import {
-    Page,
-    Layout,
-    Text,
-    Card,
-    Button,
-    BlockStack,
-    InlineStack,
-    Grid,
-    Select,
-    Autocomplete,
-    Icon,
-    TextField,
-    ButtonGroup,
-    Popover,
-    ActionList,
-    Box,
-    IconProps,
-    ThumbnailProps,
-    AvatarProps,
-    Thumbnail,
-    SkeletonBodyText,
-    Spinner,
+  Page,
+  Layout,
+  Text,
+  Card,
+  Button,
+  BlockStack,
+  InlineStack,
+  Grid,
+  Select,
+  Autocomplete,
+  Icon,
+  TextField,
+  ButtonGroup,
+  Popover,
+  ActionList,
+  Box,
+  IconProps,
+  ThumbnailProps,
+  AvatarProps,
+  Thumbnail,
+  SkeletonBodyText,
+  Spinner,
+  Divider,
+  Tag,
 } from "@shopify/polaris";
 import {
-    SearchIcon,
-    MagicIcon,
-    ClockIcon,
-    WandIcon,
-    DeleteIcon,
-    ThumbsDownIcon,
-    ThumbsUpIcon,
-    ClipboardIcon
-} from '@shopify/polaris-icons';
+  SearchIcon,
+  MagicIcon,
+  ClockIcon,
+  WandIcon,
+  DeleteIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+  ClipboardIcon,
+} from "@shopify/polaris-icons";
 import dynamic from "next/dist/shared/lib/dynamic";
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-import 'react-quill/dist/quill.snow.css';
-import styles from "../styles/styles.module.css"
+import "react-quill/dist/quill.snow.css";
+import styles from "../styles/styles.module.css";
 import { authenticate } from "app/shopify.server";
 import axios from "axios";
 import { filterAndMapTemplates } from "../app.template";
+import { GenerateDescription, GetTemplateByShopName } from "app/api/JavaServer";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-    const adminAuthResult = await authenticate.admin(request);
-    const { session, admin } = adminAuthResult;
-    const response = await admin.graphql(
-        `#graphql
-        query {
-            shop {
-                shopOwnerName
-            }
-        }`,
-    );
-
-    const data = await response.json();
-
+  const adminAuthResult = await authenticate.admin(request);
+  const { session, admin } = adminAuthResult;
+  try {
     return {
-        shop: session?.shop,
-        server: process.env.SERVER_URL,
-        shopOwnerName: data.data.shop.shopOwnerName,
+      shop: session?.shop,
+      server: process.env.SERVER_URL,
     };
+  } catch (error) {
+    console.error(error);
+    return {
+      shop: "",
+      server: process.env.SERVER_URL,
+    };
+  }
 };
 
 const Index = () => {
-    const { shopOwnerName, server, shop } = useLoaderData<typeof loader>();
-    const [userCost, setUserCost] = useState<any>(async () => {
-        const response = await axios.post(`${server}/apg/userCounter/getUserCounter?shopName=${shop}`);
-        if (response.data.success) {
-            setUserCost({
-                allCounter: response.data.response?.allCounter || 10,
-                productCounter: response.data.response?.productCounter || 1,
-                productSeoCounter: response.data.response?.productSeoCounter || 0,
-                collectionCounter: response.data.response?.collectionCounter || 0,
-                collectionSeoCounter: response.data.response?.collectionSeoCounter || 0,
-                extraCounter: response.data.response?.extraCounter || 0,
-            });
-        } else {
-            setUserCost({
-                allCounter: 10,
-                productCounter: 1,
-                productSeoCounter: 0,
-                collectionCounter: 0,
-                collectionSeoCounter: 0,
-                extraCounter: 0,
-            })
-        }
-    });
-    const [pageType, setPageType] = useState<string>("product");
-    const [contentType, setContentType] = useState<"Description" | "SEODescription">("Description");
-    const [textValue, setTextValue] = useState<string>("");
-    const [template, setTemplate] = useState<string>("");
-    const [seoKeyword, setSeoKeyword] = useState<string>("");
-    const [additionalInformation, setAdditionalInformation] = useState<string>("");
-    const [language, setLanguage] = useState<string>("English");
-    const [model, setModel] = useState<string>("GPT-4.1 Mini");
-    const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-    const [options, setOptions] = useState<{
-        id: string,
-        label: string,
-        value: string,
-        media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps>
-    }[]>([]);
-    const [willLoadMoreResults, setWillLoadMoreResults] = useState(true);
-    const [endCursor, setEndCursor] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [isEdit, setIsEdit] = useState(false);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [modelPopoverActive, setModelPopoverActive] = useState(false);
-    const [seoKeywordError, setSeoKeywordError] = useState("");
-    const [productError, setProductError] = useState("");
-    const [originalData, setOriginalData] = useState<any>(null);
-    const [editedData, setEditedData] = useState<any>(null);
-    const [templates, setTemplates] = useState<any>(null);
+  const { server, shop } = useLoaderData<typeof loader>();
+  const location = useLocation();
+  // const [userCost, setUserCost] = useState<any>({
+  //   allCounter: 0,
+  //   productCounter: 0,
+  //   productSeoCounter: 0,
+  //   collectionCounter: 0,
+  //   collectionSeoCounter: 0,
+  //   extraCounter: 0,
+  // });
+  const [shopOwnerName, setShopOwnerName] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [pageType, setPageType] = useState<"product" | "collection">("product");
+  const [contentType, setContentType] = useState<"description" | "seo">(
+    "description",
+  );
+  const [textValue, setTextValue] = useState<string>("");
+  const [brandStyle, setBrandStyle] = useState<string>("");
+  const [languageStyle, setLanguageStyle] = useState<string>("formal");
+  const [template, setTemplate] = useState<string>("");
+  const [model, setModel] = useState<string>("GPT-4.1 Mini");
+  const [focusSeoKeywordInput, setFocusSeoKeywordInput] =
+    useState<boolean>(false);
+  const [seoKeywords, setSeoKeywords] = useState<string>("");
+  const [seoKeywordTags, setSeoKeywordTags] = useState<string[]>([]);
+  const [brand, setBrand] = useState<string>("");
+  const [brandSlogan, setBrandSlogan] = useState<string>("");
+  const [additionalInformation, setAdditionalInformation] =
+    useState<string>("");
+  const [language, setLanguage] = useState<string>("English");
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [selectedProductItem, setSelectedProductItem] = useState<
+    React.ReactNode | any
+  >(null);
+  const [options, setOptions] = useState<
+    {
+      id: string;
+      label: string;
+      value: string;
+      media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps>;
+    }[]
+  >([]);
+  const [willLoadMoreResults, setWillLoadMoreResults] = useState(true);
+  const [endCursor, setEndCursor] = useState(null);
+  const [autoCompleteLoading, setAutoCompleteLoading] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [modelPopoverActive, setModelPopoverActive] = useState(false);
+  const [seoKeywordError, setSeoKeywordError] = useState("");
+  const [productError, setProductError] = useState("");
+  const [originalData, setOriginalData] = useState<any>(null);
+  const [editedData, setEditedData] = useState<any>(null);
+  const [templates, setTemplates] = useState<any>([]);
 
-    const isFirstLoad = useRef(true);
+  const isFirstLoad = useRef(true);
 
-    const filterTemplates = useMemo(() => {
-        if (!templates) return [];
-        const allTemplates = Object.values(templates).reduce((acc: any[], curr: any) => {
-            // 2. 获取当前 contentType 的模板
-            const templatesByContentType = curr[contentType] || [];
-            // 3. 筛选出 type 匹配 pageType 的模板
-            const filteredTemplates = templatesByContentType.filter(
-                (template: any) => template.type === pageType
-            );
-            // 4. 合并到结果数组
-            return [...acc, ...filteredTemplates];
-        }, [] as any[]);
+  // const filterTemplates = useMemo(() => {
+  //   if (!templates) return [];
+  //   const allTemplates = Object.values(templates).reduce(
+  //     (acc: any[], curr: any) => {
+  //       // 2. 获取当前 contentType 的模板
+  //       const templatesByContentType = curr[contentType] || [];
+  //       // 3. 筛选出 type 匹配 pageType 的模板
+  //       const filteredTemplates = templatesByContentType.filter(
+  //         (template: any) => template.type === pageType,
+  //       );
+  //       // 4. 合并到结果数组
+  //       return [...acc, ...filteredTemplates];
+  //     },
+  //     [] as any[],
+  //   );
 
-        return allTemplates;
-    }, [pageType, contentType, templates]);
+  //   return allTemplates;
+  // }, [pageType, contentType, templates]);
 
-    const fetcher = useFetcher<any>();
-    const publishFetcher = useFetcher<any>();
+  const brandStyleOptions = useMemo(
+    () => [
+      {
+        label: "",
+        value: "",
+      },
+      {
+        label: "Apple – Minimal & premium",
+        value: "apple",
+      },
+      {
+        label: "Samsung – Innovative & versatile",
+        value: "samsung",
+      },
+      {
+        label: "Nike – Bold & empowering",
+        value: "nike",
+      },
+      {
+        label: "Adidas – Dynamic & inclusive",
+        value: "adidas",
+      },
+      {
+        label: "Patagonia – Ethical & adventurous",
+        value: "patagonia",
+      },
+      {
+        label: "Zara – Modern & chic",
+        value: "zara",
+      },
+      {
+        label: "H&M – Trendy & casual",
+        value: "hm",
+      },
+      {
+        label: "Dior – Feminine & luxurious",
+        value: "dior",
+      },
+      {
+        label: "Uniqlo – Simple & comfortable",
+        value: "uniqlo_simple",
+      },
+      {
+        label: "Uniqlo – Clean & functional",
+        value: "uniqlo_functional",
+      },
+      {
+        label: "Ralph Lauren – Timeless & masculine",
+        value: "ralph_lauren",
+      },
+      {
+        label: "Tommy Hilfiger – Classic & youthful",
+        value: "tommy",
+      },
+      {
+        label: "Tiffany – Elegant & romantic",
+        value: "tiffany",
+      },
+      {
+        label: "Cartier – Luxurious & timeless",
+        value: "cartier",
+      },
+      {
+        label: "Swarovski – Sparkling & accessible",
+        value: "swarovski",
+      },
+      {
+        label: "L'Oréal – Confident & universal",
+        value: "loreal",
+      },
+      {
+        label: "Estée Lauder – Elegant & premium",
+        value: "estee_lauder",
+      },
+      {
+        label: "Fenty Beauty – Bold & inclusive",
+        value: "fenty",
+      },
+      {
+        label: "Pampers – Caring & reassuring",
+        value: "pampers",
+      },
+      {
+        label: "Mustela – Gentle & safe",
+        value: "mustela",
+      },
+      {
+        label: "IKEA – Practical & family-friendly",
+        value: "ikea",
+      },
+      {
+        label: "Dyson – Innovative & sleek",
+        value: "dyson",
+      },
+      {
+        label: "Philips – Smart & reliable",
+        value: "philips",
+      },
+      {
+        label: "Royal Canin – Scientific & premium",
+        value: "royal_canin",
+      },
+      {
+        label: "Pedigree – Friendly & caring",
+        value: "pedigree",
+      },
+      {
+        label: "Unilever – Mass-market & trusted",
+        value: "unilever",
+      },
+      {
+        label: "P&G – Reliable & practical",
+        value: "pg",
+      },
+      {
+        label: "Starbucks – Warm & lifestyle-driven",
+        value: "starbucks",
+      },
+      {
+        label: "Red Bull – Energetic & bold",
+        value: "red_bull",
+      },
+      {
+        label: "Nestlé – Family-oriented & global",
+        value: "nestle",
+      },
+      {
+        label: "Centrum – Scientific & trustworthy",
+        value: "centrum",
+      },
+    ],
+    [],
+  );
 
-    useEffect(() => {
-        async function fetchTemplates() {
-            const response = await axios.post(`${server}/apg/template/getAllTemplateData?shopName=${shop}`);
-            if (response.data.success) {
-                const data = response.data.response;
-                setTemplates({
-                    0: {
-                        Description: filterAndMapTemplates(data, "system", 0),
-                        SEODescription: filterAndMapTemplates(data, "system", 1),
-                    },
-                    1: {
-                        Description: filterAndMapTemplates(data, "custom", 0),
-                        SEODescription: filterAndMapTemplates(data, "custom", 1),
-                    },
-                });
-            } else {
-                setTemplates(null);
+  const languageStyleOptions = useMemo(
+    () => [
+      {
+        label: "Formal",
+        value: "formal",
+      },
+      {
+        label: "Neutral",
+        value: "neutral",
+      },
+      {
+        label: "Youthful",
+        value: "youthful",
+      },
+      {
+        label: "Luxury",
+        value: "luxury",
+      },
+      {
+        label: "Playful",
+        value: "playful",
+      },
+      {
+        label: "Inspirational",
+        value: "inspirational",
+      },
+      {
+        label: "Edgy",
+        value: "edgy",
+      },
+      {
+        label: "Minimalist",
+        value: "minimalist",
+      },
+      {
+        label: "Eco-conscious",
+        value: "eco_conscious",
+      },
+      {
+        label: "Premium-Tech",
+        value: "premium_tech",
+      },
+    ],
+    [],
+  );
+
+  const modelSelectionOptions = useMemo(
+    () => [
+      {
+        label: "ChatGPT 4.1",
+        value: "ChatGPT 4.1",
+      },
+      {
+        label: "DeepSeek R3",
+        value: "DeepSeek R3",
+      },
+    ],
+    [],
+  );
+
+  const seoKeywordTagsMarkup = useMemo(() => {
+    return seoKeywordTags.length > 0 ? (
+      <InlineStack gap="200">
+        {seoKeywordTags.map((tag) => (
+          <Tag
+            key={tag}
+            onRemove={() =>
+              setSeoKeywordTags(seoKeywordTags.filter((t) => t !== tag))
             }
-        }
-        fetchTemplates();
-    }, []);
+          >
+            {tag}
+          </Tag>
+        ))}
+      </InlineStack>
+    ) : null;
+  }, [seoKeywordTags]);
 
-    useEffect(() => {
-        if (pageType === "product") {
-            setOptions([]);
-            setLoading(true);
-            if (isFirstLoad.current) {
-                fetcher.submit({ query: textValue }, { method: "POST", action: "/getProductInfo" });
-                isFirstLoad.current = false;
+  const fetcher = useFetcher<any>();
+  const productInfoFetcher = useFetcher<any>();
+  const shopOwnerNameFetcher = useFetcher<any>();
+  const publishFetcher = useFetcher<any>();
+
+  useEffect(() => {
+    const shopOwnerName = localStorage.getItem("shopOwnerName");
+    if (shopOwnerName) {
+      setShopOwnerName(shopOwnerName);
+    } else {
+      shopOwnerNameFetcher.submit(
+        {},
+        { method: "POST", action: "/getShopOwnerName" },
+      );
+    }
+    // setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && seoKeywords && focusSeoKeywordInput) {
+        if (seoKeywordTags.includes(seoKeywords)) {
+          shopify.toast.show(`SEO Keyword ${seoKeywords} already exists`);
+          return;
+        }
+        if (seoKeywordTags.length >= 3) {
+          shopify.toast.show("You can only add up to 3 SEO keywords");
+          return;
+        }
+        setSeoKeywordTags((prev) => [...prev, seoKeywords]);
+        setSeoKeywords("");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // 清除上一个监听
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [seoKeywords, focusSeoKeywordInput]);
+
+  useEffect(() => {
+    if (location.state?.productId) {
+      productInfoFetcher.submit(
+        { productId: location.state?.productId },
+        { method: "POST", action: "/getProductInfoById" },
+      );
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (pageType === "product") {
+      setOptions([]);
+      setAutoCompleteLoading(true);
+      if (isFirstLoad.current) {
+        fetcher.submit(
+          { query: textValue, pageSize: 20 },
+          { method: "POST", action: "/getProductInfo" },
+        );
+        isFirstLoad.current = false;
+      }
+    } else {
+      setOptions([]);
+      setAutoCompleteLoading(true);
+      if (isFirstLoad.current) {
+        fetcher.submit(
+          { query: textValue, pageSize: 20 },
+          { method: "POST", action: "/getCollectionInfo" },
+        );
+        isFirstLoad.current = false;
+      }
+    }
+  }, [pageType, textValue]);
+
+  useEffect(() => {
+    setTemplate("");
+    setTemplates([]);
+    const fetchTemplates = async () => {
+      const response = await GetTemplateByShopName({
+        server: server as string,
+        shop: shop as string,
+        pageType: pageType,
+        contentType: contentType,
+      });
+
+      if (response.success) {
+        setTemplates(response.response);
+        setTemplate(response.response[0].id.toString());
+      } else {
+        setTemplates(null);
+      }
+    };
+    fetchTemplates();
+  }, [pageType, contentType]);
+
+  useEffect(() => {
+    if (shopOwnerNameFetcher.data) {
+      setShopOwnerName(shopOwnerNameFetcher.data.shopOwnerName);
+      localStorage.setItem(
+        "shopOwnerName",
+        shopOwnerNameFetcher.data.shopOwnerName,
+      );
+    }
+  }, [shopOwnerNameFetcher.data]);
+
+  useEffect(() => {
+    if (fetcher.data) {
+      if (fetcher.data.success) {
+        setAutoCompleteLoading(false);
+        setOptions((prev) => [
+          ...prev,
+          ...fetcher.data!.response.data.map((item: any) => ({
+            id: item.id,
+            label: item.title,
+            value: item.id,
+            media: <Thumbnail source={item.image} alt={item.title} />,
+          })),
+        ]);
+        setWillLoadMoreResults(fetcher.data!.response.hasNextPage);
+        setEndCursor(fetcher.data!.response.endCursor);
+      }
+    }
+  }, [fetcher.data]);
+
+  useEffect(() => {
+    if (productInfoFetcher.data) {
+      const selectedProduct = {
+        id: productInfoFetcher.data.response.id,
+        label: productInfoFetcher.data.response.title,
+        value: productInfoFetcher.data.response.id,
+        media: (
+          <Thumbnail
+            source={
+              productInfoFetcher.data.response.media.edges[0]?.node?.preview
+                ?.image?.url
             }
-        } else {
-            setOptions([]);
-            setLoading(true);
-            if (isFirstLoad.current) {
-                fetcher.submit({ query: textValue }, { method: "POST", action: "/getCollectionInfo" });
-                isFirstLoad.current = false;
-            }
-        }
-    }, [pageType, textValue]);
-
-    useEffect(() => {
-        if (!templates) return;
-        console.log(templates);
-        const templateId = templates?.[0]?.[contentType]?.find(
-            (template: any) => template.type === pageType
-        )?.id;
-        setTemplate(templateId);
-    }, [pageType, contentType, templates]);
-
-    useEffect(() => {
-        if (fetcher.data) {
-            if (fetcher.data.success) {
-                setLoading(false);
-                setOptions((prev) => [...prev, ...fetcher.data!.response.data.map((item: any) => ({ id: item.id, label: item.title, value: item.id, media: <Thumbnail source={item.image} alt={item.title} /> }))]);
-                setWillLoadMoreResults(fetcher.data!.response.hasNextPage);
-                setEndCursor(fetcher.data!.response.endCursor);
-            }
-        }
-    }, [fetcher.data]);
-
-    useEffect(() => {
-        if (publishFetcher.data) {
-            shopify.toast.show("Description published successfully");
-        }
-    }, [publishFetcher.data]);
-
-    const updateSelection = useCallback(
-        (selected: string[]) => {
-            setSelectedOptions(selected);
-            if (selected.length === 0) {
-                setProductError(`${pageType === "product" ? "Product" : "Collection"} is required`);
-            } else {
-                setProductError("");
-            }
-        },
-        [options],
-    );
-
-    const selectedProductItem = useMemo(() => {
-        const selectedProduct = options.find((option: { id: string; label: string; value: string; media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps> }) => {
-            return selectedOptions.includes(option.value);
-        });
-        return (
-            selectedProduct ? <Box padding="400" background="bg-surface-secondary" borderRadius="200">
-                <InlineStack gap="400" align="space-between" blockAlign="center" direction="row" wrap={false}>
-                    <InlineStack gap="400" align="center" blockAlign="center" direction="row" wrap={false}>
-                        {/* <Icon source={SearchIcon} tone="base" /> */}
-                        {selectedProduct?.media}
-                        <Text as="p" variant="bodyMd">
-                            {selectedProduct?.label}
-                        </Text>
-                    </InlineStack>
-                    <Button icon={DeleteIcon} variant="tertiary" onClick={() => {
-                        setSelectedOptions([]);
-                    }} />
-                </InlineStack>
-            </Box> : null
-        )
-    }, [options, selectedOptions]);
-
-    const handleLoadMoreResults = useCallback(() => {
-        if (willLoadMoreResults && endCursor) {
-            setLoading(true);
-            if (pageType === "product") {
-                setTimeout(() => {
-                    fetcher.submit({ endCursor: endCursor, query: textValue }, { method: "POST", action: "/getProductInfo" });
-                }, 1000);
-            } else {
-                setTimeout(() => {
-                    fetcher.submit({ endCursor: endCursor, query: textValue }, { method: "POST", action: "/getCollectionInfo" });
-                }, 1000);
-            }
-        }
-    }, [willLoadMoreResults, endCursor, options.length]);
-
-    const handleModelChange = useCallback((value: string) => {
-        setModel(value);
-        setModelPopoverActive(false);
-    }, []);
-
-    const handlePublish = useCallback(() => {
-        publishFetcher.submit({
-            id: selectedOptions[0],
-            pageType: editedData.pageType,
-            contentType: editedData.contentType,
-            description: contentType === "SEODescription" ? removeHtmlTags(editedData.description) : editedData.description,
-        }, { method: "POST", action: "/descriptionPublish" });
-    }, [selectedOptions, editedData]);
-
-    const handleEdit = useCallback(() => {
-        setIsEdit(true);
-    }, []);
-
-    const handleConfirm = useCallback(() => {
-        setIsEdit(false);
-    }, []);
-
-    const handleCancel = useCallback(() => {
-        setEditedData(originalData);
-        setIsEdit(false);
-    }, []);
-
-    const handleGenerate = useCallback(async () => {
-        setIsEdit(false);
-        setEditedData(null);
-        setOriginalData(null);
-        let errors = false;
-        if (seoKeyword.length === 0) {
-            setSeoKeywordError("SEOKeyword is required");
-            errors = true;
-        } else {
-            setSeoKeywordError("");
-        }
-        if (selectedOptions.length === 0) {
-            setProductError(`${pageType === "product" ? "Product" : "Collection"} is required`);
-            errors = true;
-        } else {
-            setProductError("");
-        }
-        if (errors) {
-            return;
-        }
-        setIsGenerating(true);
-
-        const response = await axios.post(`${server}/apg/descriptionGeneration/generateDescription?shopName=${shop}`, {
-            pageType: pageType,
-            contentType: contentType,
-            id: selectedOptions[0],
-            seoKeyword: seoKeyword,
-            templateId: template || 1,
-            additionalInformation: additionalInformation,
-            language: language,
-            test: false,
-            model: "gpt-4o-mini",
-        });
-        if (response.data.success) {
-            setIsGenerating(false);
-            setEditedData({
-                ...response.data.response,
-                description: response.data.response.description.replace(/\n/g, "<br/>")
-            });
-            setOriginalData({
-                ...response.data.response,
-                description: response.data.response.description.replace(/\n/g, "<br/>")
-            });
-            if (response.data.response.pageType === "product" && contentType === "Description") {
-                setUserCost({
-                    ...userCost,
-                    productCounter: userCost.productCounter + 1,
-                });
-            } else if (response.data.response.pageType === "product" && contentType === "SEODescription") {
-                setUserCost({
-                    ...userCost,
-                    productSeoCounter: userCost.productSeoCounter + 1,
-                });
-            } else if (response.data.response.pageType === "collection" && contentType === "Description") {
-                setUserCost({
-                    ...userCost,
-                    collectionCounter: userCost.collectionCounter + 1,
-                });
-            } else if (response.data.response.pageType === "collection" && contentType === "SEODescription") {
-                setUserCost({
-                    ...userCost,
-                    collectionSeoCounter: userCost.collectionSeoCounter + 1,
-                });
-            }
-        } else {
-            setIsGenerating(false);
-            shopify.toast.show("Failed to generate description");
-        }
-    }, [selectedOptions, pageType, contentType, seoKeyword, additionalInformation, language, template]);
-
-    return (
-        userCost && "productCounter" in userCost ?
-            (<Page
-                title={`Hi ${shopOwnerName}!`}
-                subtitle="Welcome to our app! If you have any questions, feel free to email us at support@ciwi.ai, and we will respond as soon as possible."
-                compactTitle
+            alt={productInfoFetcher.data.response.title}
+          />
+        ),
+      };
+      setSelectedProductItem(
+        <Box padding="400" background="bg-surface-secondary" borderRadius="200">
+          <InlineStack
+            gap="400"
+            align="space-between"
+            blockAlign="center"
+            direction="row"
+            wrap={false}
+          >
+            <InlineStack
+              gap="400"
+              align="center"
+              blockAlign="center"
+              direction="row"
+              wrap={false}
             >
-                <BlockStack gap="500">
-                    <Layout>
-                        <Layout.Section>
-                            <div>
-                                <Grid>
-                                    <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 8 }}>
-                                        <Card>
-                                            <BlockStack gap="200">
-                                                <InlineStack gap="100">
-                                                    <Box>
-                                                        <Icon source={WandIcon} tone="base" />
-                                                    </Box>
-                                                    <Text as="h2" variant="headingMd">
-                                                        Generated content
-                                                    </Text>
-                                                </InlineStack>
-                                                <div className={styles.Ciwi_Analytics_Metrics}>
-                                                    <Grid columns={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }} gap={{ xs: "0", sm: "0", md: "0", lg: "0", xl: "0" }}>
-                                                        <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                            <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_LeftTop}>
-                                                                <Text as="p" variant="bodyMd">
-                                                                    Product description
-                                                                </Text>
-                                                                <Text as="p" variant="headingXl">
-                                                                    {userCost.productCounter}
-                                                                </Text>
-                                                            </div>
-                                                        </Grid.Cell>
-                                                        <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                            <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_RightTop}>
-                                                                <Text as="p" variant="bodyMd">
-                                                                    Product SEO description
-                                                                </Text>
-                                                                <Text as="p" variant="headingXl">
-                                                                    {userCost.productSeoCounter}
-                                                                </Text>
-                                                            </div>
-                                                        </Grid.Cell>
-                                                        <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                            <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_LeftDown}>
-                                                                <Text as="p" variant="bodyMd">
-                                                                    Collection description
-                                                                </Text>
-                                                                <Text as="p" variant="headingXl">
-                                                                    {userCost.collectionCounter}
-                                                                </Text>
-                                                            </div>
-                                                        </Grid.Cell>
-                                                        <Grid.Cell columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                                            <div className={styles.Ciwi_Analytics_Metric + " " + styles.Ciwi_Analytics_Metrics_RightDown}>
-                                                                <Text as="p" variant="bodyMd">
-                                                                    Collection SEO description
-                                                                </Text>
-                                                                <Text as="p" variant="headingXl">
-                                                                    {userCost.collectionSeoCounter}
-                                                                </Text>
-                                                            </div>
-                                                        </Grid.Cell>
-                                                    </Grid>
-                                                </div>
-                                            </BlockStack>
-                                        </Card>
-                                    </Grid.Cell>
-                                    <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 4 }}>
-                                        <Card background="bg-surface" padding="400">
-                                            <BlockStack gap="200">
-                                                <InlineStack gap="100">
-                                                    <Box>
-                                                        <Icon source={ClockIcon} tone="base" />
-                                                    </Box>
-                                                    <Text as="h2" variant="headingMd">
-                                                        Time saved
-                                                    </Text>
-                                                </InlineStack>
-                                                <div className={styles.Ciwi_Analytics_TimeSaved}>
-                                                    <InlineStack gap="050" blockAlign="end" direction="row" align="center">
-                                                        <Text as="p" variant="heading2xl">
-                                                            {(userCost.productCounter + userCost.collectionCounter) * 0.5 + (userCost.productSeoCounter + userCost.collectionSeoCounter) * 0.3}
-                                                        </Text>
-                                                        <Text as="p" variant="bodyMd">
-                                                            hours
-                                                        </Text>
-                                                    </InlineStack>
-                                                </div>
-                                            </BlockStack>
-                                        </Card>
-                                    </Grid.Cell>
-                                </Grid>
-                            </div>
-                        </Layout.Section>
-                        <Layout.Section>
-                            <Card>
-                                <BlockStack gap="400">
-                                    <Grid>
-                                        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4 }}>
-                                            <BlockStack gap="400">
-                                                <InlineStack gap="100">
-                                                    <Box>
-                                                        <Icon
-                                                            source={MagicIcon}
-                                                            tone="base"
-                                                        />
-                                                    </Box>
-                                                    <Text as="h2" variant="headingMd">
-                                                        Quick generator
-                                                    </Text>
-                                                </InlineStack>
-                                                <Select
-                                                    label="Page type"
-                                                    options={[
-                                                        { label: "Product", value: "product" },
-                                                        { label: "Collection", value: "collection" },
-                                                    ]}
-                                                    value={pageType}
-                                                    onChange={(value) => {
-                                                        setPageType(value);
-                                                        setSelectedOptions([]);
-                                                        setTextValue("");
-                                                        isFirstLoad.current = true;
-                                                    }}
-                                                />
-                                                <Select
-                                                    label="Content type"
-                                                    options={[
-                                                        { label: "Description", value: "Description" },
-                                                        { label: "SEO description", value: "SEODescription" },
-                                                    ]}
-                                                    value={contentType}
-                                                    onChange={(value) => setContentType(value as "Description" | "SEODescription")}
-                                                />
-                                                {selectedProductItem ? selectedProductItem :
-                                                    <Autocomplete
-                                                        options={options}
-                                                        selected={selectedOptions}
-                                                        onSelect={updateSelection}
-                                                        loading={loading}
-                                                        onLoadMoreResults={handleLoadMoreResults}
-                                                        willLoadMoreResults={willLoadMoreResults}
-                                                        textField={
-                                                            <Autocomplete.TextField
-                                                                label={pageType === "product" ? "Product" : "Collection"}
-                                                                prefix={<Icon source={SearchIcon} tone="base" />}
-                                                                placeholder={pageType === "product" ? "Search Product" : "Search Collection"}
-                                                                autoComplete="off"
-                                                                error={productError}
-                                                                value={textValue}
-                                                                onChange={(value) => {
-                                                                    setTextValue(value);
-                                                                    isFirstLoad.current = true;
-                                                                }}
-                                                            />
-                                                        }
-                                                    />
-                                                }
-                                                <TextField
-                                                    label="SEO keyword"
-                                                    value={seoKeyword}
-                                                    placeholder="Keyword"
-                                                    error={seoKeywordError}
-                                                    onChange={(value) => {
-                                                        setSeoKeyword(value);
-                                                        if (value.length !== 0) {
-                                                            setSeoKeywordError("");
-                                                        }
-                                                    }}
-                                                    autoComplete="off"
-                                                />
-                                                <Select
-                                                    label="Template"
-                                                    options={filterTemplates.map((template: any) => ({ label: template.title, value: template.id }))}
-                                                    value={template}
-                                                    onChange={(value) => setTemplate(value)}
-                                                />
-                                                <TextField
-                                                    label="Additional information"
-                                                    value={additionalInformation}
-                                                    placeholder="Add unique product details, specifications, key selling points, etc"
-                                                    onChange={(value) => setAdditionalInformation(value)}
-                                                    multiline={4}
-                                                    autoComplete="off"
-                                                />
-                                                <Select
-                                                    label="Language"
-                                                    options={[
-                                                        { label: "English", value: "English" },
-                                                        { label: "French", value: "French" },
-                                                        { label: "Spanish", value: "Spanish" },
-                                                        { label: "German", value: "German" },
-                                                        { label: "Italian", value: "Italian" },
-                                                        { label: "Portuguese", value: "Portuguese" },
-                                                        { label: "Dutch", value: "Dutch" },
-                                                        { label: "Japanese", value: "Japanese" },
-                                                        { label: "Chinese", value: "Chinese" },
-                                                        { label: "Russian", value: "Russian" },
-                                                        { label: "Serbian", value: "Serbian" },
-                                                        { label: "Turkish", value: "Turkish" },
-                                                        { label: "Tiếng Việt", value: "Tiếng Việt" },
-                                                    ]}
-                                                    value={language}
-                                                    onChange={(value) => setLanguage(value)}
-                                                />
-                                                <InlineStack gap="200" wrap={false}>
-                                                    <div style={{ minWidth: "115px" }}>
-                                                        <ButtonGroup variant="segmented">
-                                                            <Popover
-                                                                active={modelPopoverActive}
-                                                                preferredAlignment="right"
-                                                                activator={
-                                                                    <Button
-                                                                        variant="tertiary"
-                                                                        onClick={() => setModelPopoverActive(!modelPopoverActive)}
-                                                                        disclosure
-                                                                    >
-                                                                        {model}
-                                                                    </Button>
-                                                                }
-                                                                autofocusTarget="first-node"
-                                                                onClose={() => setModelPopoverActive(false)}
-                                                            >
-                                                                <ActionList
-                                                                    actionRole="menuitem"
-                                                                    items={[{ content: 'GPT-4.1 Mini', onAction: () => handleModelChange("GPT-4.1 Mini") }]}
-                                                                />
-                                                            </Popover>
-                                                        </ButtonGroup>
-                                                    </div>
+              {/* <Icon source={SearchIcon} tone="base" /> */}
+              {selectedProduct?.media}
+              <Text as="p" variant="bodyMd">
+                {selectedProduct?.label}
+              </Text>
+            </InlineStack>
+            <Button
+              icon={DeleteIcon}
+              variant="tertiary"
+              onClick={() => {
+                setSelectedOptions([]);
+                setSelectedProductItem(null);
+              }}
+            />
+          </InlineStack>
+        </Box>,
+      );
+    }
+  }, [productInfoFetcher.data]);
 
-                                                    <Button
-                                                        fullWidth
-                                                        variant="primary"
-                                                        icon={MagicIcon}
-                                                        onClick={handleGenerate}
-                                                        loading={isGenerating}
-                                                    >
-                                                        Generate
-                                                    </Button>
-                                                </InlineStack>
-                                            </BlockStack>
-                                        </Grid.Cell>
-                                        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 8 }}>
-                                            <div className={styles.Ciwi_QuickGenerator_Result + " " + (editedData && !isEdit ? styles.hasResult : "") + " " + (isEdit ? styles.isEdit : "")}>
-                                                {!editedData && !isGenerating ? <div className={styles.Ciwi_QuickGenerator_Result_Empty}>
-                                                    <Text as="p" variant="bodyMd">
-                                                        Generated content will appear here
-                                                    </Text>
-                                                </div> : null}
-                                                {isGenerating ? <div className={styles.Ciwi_QuickGenerator_Result_Loading}>
-                                                    <SkeletonBodyText lines={10} />
-                                                </div> : null}
-                                                {editedData && !isGenerating ? <div className={styles.Ciwi_QuickGenerator_Result_Content}>
-                                                    {isEdit ?
-                                                        <div className={styles.Ciwi_QuickGenerator_Result_Editor}>
-                                                            <ReactQuill value={editedData.description} onChange={(value) => setEditedData({ ...editedData, description: value })} style={{ height: "590px" }} />
-                                                        </div>
-                                                        :
-                                                        <div className={styles.Ciwi_QuickGenerator_Result_Markdown}>
-                                                            <div dangerouslySetInnerHTML={{ __html: editedData.description }} />
-                                                        </div>
-                                                    }
-                                                    <div className={styles.Ciwi_QuickGenerator_Result_Feedback + " " + (isEdit ? styles.Edit_Button : "")}>
-                                                        {isEdit ?
-                                                            <ButtonGroup>
-                                                                <Button onClick={handleConfirm}>Confirm</Button>
-                                                                <Button onClick={handleCancel}>Cancel</Button>
-                                                            </ButtonGroup>
-                                                            :
-                                                            <>
-                                                                <ButtonGroup>
-                                                                    <Button onClick={handlePublish} loading={publishFetcher.state === "submitting"}>Publish</Button>
-                                                                    <Button onClick={handleEdit}>Edit</Button>
-                                                                </ButtonGroup>
-                                                                {/* <InlineStack gap="100">
+  useEffect(() => {
+    if (publishFetcher.data) {
+      shopify.toast.show("Description published successfully");
+    }
+  }, [publishFetcher.data]);
+
+  const updateSelection = useCallback(
+    (selected: string[]) => {
+      if (selected.length === 0) {
+        setProductError(
+          `${pageType === "product" ? "Product" : "Collection"} is required`,
+        );
+      } else {
+        setProductError("");
+      }
+      setSelectedOptions(selected);
+      const selectedProduct = options.find(
+        (option: {
+          id: string;
+          label: string;
+          value: string;
+          media?: React.ReactElement<IconProps | ThumbnailProps | AvatarProps>;
+        }) => {
+          return selected.includes(option.value);
+        },
+      );
+      if (selectedProduct) {
+        setSelectedProductItem(
+          <Box
+            padding="400"
+            background="bg-surface-secondary"
+            borderRadius="200"
+          >
+            <InlineStack
+              gap="400"
+              align="space-between"
+              blockAlign="center"
+              direction="row"
+              wrap={false}
+            >
+              <InlineStack
+                gap="400"
+                align="center"
+                blockAlign="center"
+                direction="row"
+                wrap={false}
+              >
+                {/* <Icon source={SearchIcon} tone="base" /> */}
+                {selectedProduct?.media}
+                <Text as="p" variant="bodyMd">
+                  {selectedProduct?.label}
+                </Text>
+              </InlineStack>
+              <Button
+                icon={DeleteIcon}
+                variant="tertiary"
+                onClick={() => {
+                  setSelectedOptions([]);
+                  setSelectedProductItem(null);
+                }}
+              />
+            </InlineStack>
+          </Box>,
+        );
+      } else {
+        setSelectedProductItem(null);
+      }
+    },
+    [options],
+  );
+
+  const handleLoadMoreResults = useCallback(() => {
+    if (willLoadMoreResults && endCursor) {
+      setAutoCompleteLoading(true);
+      if (pageType === "product") {
+        setTimeout(() => {
+          fetcher.submit(
+            {
+              endCursor: endCursor,
+              query: textValue,
+              pageSize: 20,
+            },
+            { method: "POST", action: "/getProductInfo" },
+          );
+        }, 1000);
+      } else {
+        setTimeout(() => {
+          fetcher.submit(
+            {
+              endCursor: endCursor,
+              query: textValue,
+              pageSize: 20,
+            },
+            { method: "POST", action: "/getCollectionInfo" },
+          );
+        }, 1000);
+      }
+    }
+  }, [willLoadMoreResults, endCursor, options.length]);
+
+  const handleModelChange = useCallback((value: string) => {
+    setModel(value);
+    setModelPopoverActive(false);
+  }, []);
+
+  const handlePublish = useCallback(() => {
+    publishFetcher.submit(
+      {
+        id: selectedOptions[0],
+        pageType: editedData.pageType,
+        contentType: editedData.contentType,
+        description:
+          contentType === "seo"
+            ? removeHtmlTags(editedData.description)
+            : editedData.description,
+      },
+      { method: "POST", action: "/descriptionPublish" },
+    );
+  }, [selectedOptions, editedData]);
+
+  const handleEdit = useCallback(() => {
+    setIsEdit(true);
+  }, []);
+
+  const handleConfirm = useCallback(() => {
+    setIsEdit(false);
+  }, []);
+
+  const handleCancel = useCallback(() => {
+    setEditedData(originalData);
+    setIsEdit(false);
+  }, []);
+
+  const handleTemplateChange = useCallback((value: string) => {
+    setTemplate(value);
+  }, []);
+
+  const handleGenerate = async () => {
+    setIsEdit(false);
+    setEditedData(null);
+    setOriginalData(null);
+    let errors = false;
+    // if (seoKeyword.length === 0) {
+    //   setSeoKeywordError("SEOKeyword is required");
+    //   errors = true;
+    // } else {
+    //   setSeoKeywordError("");
+    // }
+    if (selectedOptions.length === 0) {
+      setProductError(
+        `${pageType === "product" ? "Product" : "Collection"} is required`,
+      );
+      errors = true;
+    } else {
+      setProductError("");
+    }
+    if (errors) {
+      return;
+    }
+    setIsGenerating(true);
+
+    console.log("template", template);
+
+    const response = await GenerateDescription({
+      server: server as string,
+      shop: shop as string,
+      pageType: pageType,
+      contentType: contentType,
+      productId: selectedOptions[0],
+      languageStyle,
+      brandStyle,
+      templateId: Number(template),
+      templateType: false,
+      model: model,
+      language,
+      seoKeywords: seoKeywordTags.join(","),
+      brandWord: brand || "",
+      brandSlogan: brandSlogan || "",
+    });
+    if (response.success) {
+      setIsGenerating(false);
+      console.log(response.response);
+      setEditedData(response.response);
+      setOriginalData(response.response);
+      // if (
+      //   response.response.pageType === "product" &&
+      //   contentType === "Description"
+      // ) {
+      //   setUserCost({
+      //     ...userCost,
+      //     productCounter: userCost.productCounter + 1,
+      //   });
+      // } else if (
+      //   response.response.pageType === "product" &&
+      //   contentType === "SEODescription"
+      // ) {
+      //   setUserCost({
+      //     ...userCost,
+      //     productSeoCounter: userCost.productSeoCounter + 1,
+      //   });
+      // } else if (
+      //   response.response.pageType === "collection" &&
+      //   contentType === "Description"
+      // ) {
+      //   setUserCost({
+      //     ...userCost,
+      //     collectionCounter: userCost.collectionCounter + 1,
+      //   });
+      // } else if (
+      //   response.response.pageType === "collection" &&
+      //   contentType === "SEODescription"
+      // ) {
+      //   setUserCost({
+      //     ...userCost,
+      //     collectionSeoCounter: userCost.collectionSeoCounter + 1,
+      //   });
+      // }
+    } else {
+      setIsGenerating(false);
+      shopify.toast.show("Failed to generate description");
+    }
+  };
+
+  //   return loading ? (
+  //     <div
+  //       style={{
+  //         display: "flex",
+  //         justifyContent: "center",
+  //         alignItems: "center",
+  //         height: "100vh",
+  //       }}
+  //     >
+  //       <Spinner />
+  //     </div>
+  //   ) : (
+  return (
+    <Page
+      title={`Hi ${shopOwnerName}!`}
+      subtitle="Welcome to our app! If you have any questions, feel free to email us at support@ciwi.ai, and we will respond as soon as possible."
+      compactTitle
+    >
+      <BlockStack gap="500">
+        <Layout>
+          {/* <Layout.Section>
+            <div>
+              <Grid>
+                <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 8 }}>
+                  <Card>
+                    <BlockStack gap="200">
+                      <InlineStack gap="100">
+                        <Box>
+                          <Icon source={WandIcon} tone="base" />
+                        </Box>
+                        <Text as="h2" variant="headingMd">
+                          Generated content
+                        </Text>
+                      </InlineStack>
+                      <div className={styles.Ciwi_Analytics_Metrics}>
+                        <Grid
+                          columns={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}
+                          gap={{
+                            xs: "0",
+                            sm: "0",
+                            md: "0",
+                            lg: "0",
+                            xl: "0",
+                          }}
+                        >
+                          <Grid.Cell
+                            columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}
+                          >
+                            <div
+                              className={
+                                styles.Ciwi_Analytics_Metric +
+                                " " +
+                                styles.Ciwi_Analytics_Metrics_LeftTop
+                              }
+                            >
+                              <Text as="p" variant="bodyMd">
+                                Product description
+                              </Text>
+                              <Text as="p" variant="headingXl">
+                                {userCost.productCounter}
+                              </Text>
+                            </div>
+                          </Grid.Cell>
+                          <Grid.Cell
+                            columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}
+                          >
+                            <div
+                              className={
+                                styles.Ciwi_Analytics_Metric +
+                                " " +
+                                styles.Ciwi_Analytics_Metrics_RightTop
+                              }
+                            >
+                              <Text as="p" variant="bodyMd">
+                                Product SEO description
+                              </Text>
+                              <Text as="p" variant="headingXl">
+                                {userCost.productSeoCounter}
+                              </Text>
+                            </div>
+                          </Grid.Cell>
+                          <Grid.Cell
+                            columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}
+                          >
+                            <div
+                              className={
+                                styles.Ciwi_Analytics_Metric +
+                                " " +
+                                styles.Ciwi_Analytics_Metrics_LeftDown
+                              }
+                            >
+                              <Text as="p" variant="bodyMd">
+                                Collection description
+                              </Text>
+                              <Text as="p" variant="headingXl">
+                                {userCost.collectionCounter}
+                              </Text>
+                            </div>
+                          </Grid.Cell>
+                          <Grid.Cell
+                            columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}
+                          >
+                            <div
+                              className={
+                                styles.Ciwi_Analytics_Metric +
+                                " " +
+                                styles.Ciwi_Analytics_Metrics_RightDown
+                              }
+                            >
+                              <Text as="p" variant="bodyMd">
+                                Collection SEO description
+                              </Text>
+                              <Text as="p" variant="headingXl">
+                                {userCost.collectionSeoCounter}
+                              </Text>
+                            </div>
+                          </Grid.Cell>
+                        </Grid>
+                      </div>
+                    </BlockStack>
+                  </Card>
+                </Grid.Cell>
+                <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 4 }}>
+                  <Card background="bg-surface" padding="400">
+                    <BlockStack gap="200">
+                      <InlineStack gap="100">
+                        <Box>
+                          <Icon source={ClockIcon} tone="base" />
+                        </Box>
+                        <Text as="h2" variant="headingMd">
+                          Time saved
+                        </Text>
+                      </InlineStack>
+                      <div className={styles.Ciwi_Analytics_TimeSaved}>
+                        <InlineStack
+                          gap="050"
+                          blockAlign="end"
+                          direction="row"
+                          align="center"
+                        >
+                          <Text as="p" variant="heading2xl">
+                            {(userCost.productCounter +
+                              userCost.collectionCounter) *
+                              0.5 +
+                              (userCost.productSeoCounter +
+                                userCost.collectionSeoCounter) *
+                                0.3}
+                          </Text>
+                          <Text as="p" variant="bodyMd">
+                            hours
+                          </Text>
+                        </InlineStack>
+                      </div>
+                    </BlockStack>
+                  </Card>
+                </Grid.Cell>
+              </Grid>
+            </div>
+          </Layout.Section> */}
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="400">
+                <Grid>
+                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4 }}>
+                    <BlockStack gap="400">
+                      <InlineStack gap="100">
+                        <Box>
+                          <Icon source={MagicIcon} tone="base" />
+                        </Box>
+                        <Text as="h2" variant="headingMd">
+                          Quick generator
+                        </Text>
+                      </InlineStack>
+                      <Select
+                        label="Page type"
+                        options={[
+                          { label: "Product", value: "product" },
+                          { label: "Collection", value: "collection" },
+                        ]}
+                        value={pageType}
+                        onChange={(value) => {
+                          setPageType(value as "product" | "collection");
+                          setSelectedOptions([]);
+                          setSelectedProductItem(null);
+                          setTextValue("");
+                          isFirstLoad.current = true;
+                        }}
+                      />
+                      <Select
+                        label="Content type"
+                        options={[
+                          { label: "Description", value: "description" },
+                          {
+                            label: "SEO description",
+                            value: "seo",
+                          },
+                        ]}
+                        value={contentType}
+                        onChange={(value) =>
+                          setContentType(value as "description" | "seo")
+                        }
+                      />
+                      {selectedProductItem ? (
+                        selectedProductItem
+                      ) : (
+                        <Autocomplete
+                          options={options}
+                          selected={selectedOptions}
+                          onSelect={updateSelection}
+                          loading={autoCompleteLoading}
+                          onLoadMoreResults={handleLoadMoreResults}
+                          willLoadMoreResults={willLoadMoreResults}
+                          textField={
+                            <Autocomplete.TextField
+                              label={
+                                pageType === "product"
+                                  ? "Product"
+                                  : "Collection"
+                              }
+                              prefix={<Icon source={SearchIcon} tone="base" />}
+                              placeholder={
+                                pageType === "product"
+                                  ? "Search Product"
+                                  : "Search Collection"
+                              }
+                              autoComplete="off"
+                              error={productError}
+                              value={textValue}
+                              onChange={(value) => {
+                                setTextValue(value);
+                                isFirstLoad.current = true;
+                              }}
+                            />
+                          }
+                        />
+                      )}
+                      <Divider borderColor="border" />
+                      <BlockStack gap="200">
+                        <Text variant="bodyLg" as="p">
+                          AI Generation Settings
+                        </Text>
+                        <Select
+                          label="Language style"
+                          options={languageStyleOptions}
+                          value={languageStyle}
+                          onChange={(value) => setLanguageStyle(value)}
+                        />
+                        <Select
+                          label="Brand style"
+                          options={brandStyleOptions}
+                          value={brandStyle}
+                          onChange={(value) => setBrandStyle(value)}
+                        />
+                        <Select
+                          label="Template"
+                          options={templates?.map((template: any) => ({
+                            label: template.templateTitle,
+                            value: template.id.toString(),
+                          }))}
+                          value={template}
+                          onChange={(value) => handleTemplateChange(value)}
+                        />
+                        <Select
+                          label="Model selection"
+                          options={modelSelectionOptions}
+                          value={model}
+                          onChange={(value) => setModel(value)}
+                        />
+                      </BlockStack>
+                      <Divider borderColor="border" />
+                      <TextField
+                        label="Seo Keywords"
+                        value={seoKeywords}
+                        placeholder="Click the 'Enter' to add SEO keywords"
+                        disabled={seoKeywordTags.length >= 3}
+                        onChange={(value) => {
+                          setSeoKeywords(value);
+                        }}
+                        autoComplete="off"
+                        verticalContent={seoKeywordTagsMarkup}
+                        onFocus={() => setFocusSeoKeywordInput(true)}
+                        onBlur={() => setFocusSeoKeywordInput(false)}
+                      />
+                      <Divider borderColor="border" />
+                      <BlockStack gap="200">
+                        <Text variant="bodyLg" as="p">
+                          Brand Settings
+                        </Text>
+                        <TextField
+                          label="Brand word"
+                          value={brand}
+                          maxLength={20}
+                          onChange={(value) => setBrand(value)}
+                          autoComplete="off"
+                        />
+                        <TextField
+                          label="Brand Slogan"
+                          value={brandSlogan}
+                          maxLength={100}
+                          onChange={(value) => {
+                            setBrandSlogan(value);
+                          }}
+                          autoComplete="off"
+                        />
+                      </BlockStack>
+                      <Divider borderColor="border" />
+                      {/*<TextField
+                        label="Additional information"
+                        value={additionalInformation}
+                        placeholder="Add unique product details, specifications, key selling points, etc"
+                        onChange={(value) => setAdditionalInformation(value)}
+                        multiline={4}
+                        autoComplete="off"
+                      /> */}
+                      <Select
+                        label="Language"
+                        options={[
+                          {
+                            label: "English (United States)",
+                            value: "English (United States)",
+                          },
+                          {
+                            label: "English (United Kingdom)",
+                            value: "English (United Kingdom)",
+                          },
+                          {
+                            label: "Spanish (Mexico)",
+                            value: "Spanish (Mexico)",
+                          },
+                          {
+                            label: "Spanish (Spain)",
+                            value: "Spanish (Spain)",
+                          },
+                          {
+                            label: "Chinese (Simplified - Mainland China)",
+                            value: "Chinese (Simplified - Mainland China)",
+                          },
+                          {
+                            label: "Chinese (Traditional - Taiwan)",
+                            value: "Chinese (Traditional - Taiwan)",
+                          },
+                          {
+                            label: "Hindi (India)",
+                            value: "Hindi (India)",
+                          },
+                          {
+                            label: "Portuguese (Brazil)",
+                            value: "Portuguese (Brazil)",
+                          },
+                          {
+                            label: "Portuguese (Portugal)",
+                            value: "Portuguese (Portugal)",
+                          },
+                          {
+                            label: "French (France)",
+                            value: "French (France)",
+                          },
+                          {
+                            label: "French (Canada)",
+                            value: "French (Canada)",
+                          },
+                          {
+                            label: "German (Germany)",
+                            value: "German (Germany)",
+                          },
+                          {
+                            label: "Russian (Russia)",
+                            value: "Russian (Russia)",
+                          },
+                          {
+                            label: "Japanese (Japan)",
+                            value: "Japanese (Japan)",
+                          },
+                          {
+                            label: "Korean (South Korea)",
+                            value: "Korean (South Korea)",
+                          },
+                          {
+                            label: "Indonesian (Indonesia)",
+                            value: "Indonesian (Indonesia)",
+                          },
+                          {
+                            label: "Vietnamese (Vietnam)",
+                            value: "Vietnamese (Vietnam)",
+                          },
+                          {
+                            label: "Thai (Thailand)",
+                            value: "Thai (Thailand)",
+                          },
+                          {
+                            label: "Italian (Italy)",
+                            value: "Italian (Italy)",
+                          },
+                          {
+                            label: "Dutch (Netherlands)",
+                            value: "Dutch (Netherlands)",
+                          },
+                          {
+                            label: "Polish (Poland)",
+                            value: "Polish (Poland)",
+                          },
+                          {
+                            label: "Greek (Greece)",
+                            value: "Greek (Greece)",
+                          },
+                          {
+                            label: "Czech (Czech Republic)",
+                            value: "Czech (Czech Republic)",
+                          },
+                          {
+                            label: "Hungarian (Hungary)",
+                            value: "Hungarian (Hungary)",
+                          },
+                          {
+                            label: "Swedish (Sweden)",
+                            value: "Swedish (Sweden)",
+                          },
+                          {
+                            label: "Danish (Denmark)",
+                            value: "Danish (Denmark)",
+                          },
+                          {
+                            label: "Finnish (Finland)",
+                            value: "Finnish (Finland)",
+                          },
+                          {
+                            label: "Romanian (Romania)",
+                            value: "Romanian (Romania)",
+                          },
+                          {
+                            label: "Bulgarian (Bulgaria)",
+                            value: "Bulgarian (Bulgaria)",
+                          },
+                          {
+                            label: "Slovak (Slovakia)",
+                            value: "Slovak (Slovakia)",
+                          },
+                          {
+                            label: "Ukrainian (Ukraine)",
+                            value: "Ukrainian (Ukraine)",
+                          },
+                          {
+                            label: "Malay (Malaysia)",
+                            value: "Malay (Malaysia)",
+                          },
+                          {
+                            label: "Bengali (Bangladesh)",
+                            value: "Bengali (Bangladesh)",
+                          },
+                          {
+                            label: "Tagalog (Philippines)",
+                            value: "Tagalog (Philippines)",
+                          },
+                          {
+                            label: "Urdu (Pakistan)",
+                            value: "Urdu (Pakistan)",
+                          },
+                          {
+                            label: "Tamil (India)",
+                            value: "Tamil (India)",
+                          },
+                          {
+                            label: "Telugu (India)",
+                            value: "Telugu (India)",
+                          },
+                          {
+                            label: "Marathi (India)",
+                            value: "Marathi (India)",
+                          },
+                          {
+                            label: "Gujarati (India)",
+                            value: "Gujarati (India)",
+                          },
+                          {
+                            label: "Khmer (Cambodia)",
+                            value: "Khmer (Cambodia)",
+                          },
+                          {
+                            label: "Lao (Laos)",
+                            value: "Lao (Laos)",
+                          },
+                          {
+                            label: "Burmese (Myanmar)",
+                            value: "Burmese (Myanmar)",
+                          },
+                          {
+                            label: "Serbian (Serbia)",
+                            value: "Serbian (Serbia)",
+                          },
+                          {
+                            label: "Croatian (Croatia)",
+                            value: "Croatian (Croatia)",
+                          },
+                          {
+                            label: "Bosnian (Bosnia & Herzegovina)",
+                            value: "Bosnian (Bosnia & Herzegovina)",
+                          },
+                          {
+                            label: "Slovenian (Slovenia)",
+                            value: "Slovenian (Slovenia)",
+                          },
+                          {
+                            label: "Macedonian (North Macedonia)",
+                            value: "Macedonian (North Macedonia)",
+                          },
+                          {
+                            label: "Albanian (Albania)",
+                            value: "Albanian (Albania)",
+                          },
+                          {
+                            label: "Estonian (Estonia)",
+                            value: "Estonian (Estonia)",
+                          },
+                          {
+                            label: "Latvian (Latvia)",
+                            value: "Latvian (Latvia)",
+                          },
+                          {
+                            label: "Lithuanian (Lithuania)",
+                            value: "Lithuanian (Lithuania)",
+                          },
+                          {
+                            label: "Georgian (Georgia)",
+                            value: "Georgian (Georgia)",
+                          },
+                          {
+                            label: "Azerbaijani (Azerbaijan)",
+                            value: "Azerbaijani (Azerbaijan)",
+                          },
+                          {
+                            label: "English (Canada)",
+                            value: "English (Canada)",
+                          },
+                          {
+                            label: "Spanish (Argentina)",
+                            value: "Spanish (Argentina)",
+                          },
+                          {
+                            label: "Spanish (Colombia)",
+                            value: "Spanish (Colombia)",
+                          },
+                          {
+                            label: "Spanish (Chile)",
+                            value: "Spanish (Chile)",
+                          },
+                          {
+                            label: "Haitian Creole (Haiti)",
+                            value: "Haitian Creole (Haiti)",
+                          },
+                          {
+                            label: "French (Haiti)",
+                            value: "French (Haiti)",
+                          },
+                          {
+                            label: "Quechua (Peru)",
+                            value: "Quechua (Peru)",
+                          },
+                          {
+                            label: "Guarani (Paraguay)",
+                            value: "Guarani (Paraguay)",
+                          },
+                          {
+                            label: "Aymara (Bolivia)",
+                            value: "Aymara (Bolivia)",
+                          },
+                          {
+                            label: "Arabic (Saudi Arabia)",
+                            value: "Arabic (Saudi Arabia)",
+                          },
+                          {
+                            label: "Arabic (Egypt)",
+                            value: "Arabic (Egypt)",
+                          },
+                          {
+                            label: "Arabic (United Arab Emirates)",
+                            value: "Arabic (United Arab Emirates)",
+                          },
+                          {
+                            label: "Arabic (Qatar)",
+                            value: "Arabic (Qatar)",
+                          },
+                          {
+                            label: "Arabic (Kuwait)",
+                            value: "Arabic (Kuwait)",
+                          },
+                          {
+                            label: "Arabic (Oman)",
+                            value: "Arabic (Oman)",
+                          },
+                          {
+                            label: "Arabic (Bahrain)",
+                            value: "Arabic (Bahrain)",
+                          },
+                          {
+                            label: "Arabic (Iraq)",
+                            value: "Arabic (Iraq)",
+                          },
+                          {
+                            label: "Arabic (Jordan)",
+                            value: "Arabic (Jordan)",
+                          },
+                          {
+                            label: "Arabic (Lebanon)",
+                            value: "Arabic (Lebanon)",
+                          },
+                          {
+                            label: "Arabic (Syria)",
+                            value: "Arabic (Syria)",
+                          },
+                          {
+                            label: "Arabic (Yemen)",
+                            value: "Arabic (Yemen)",
+                          },
+                          {
+                            label: "Arabic (Palestine)",
+                            value: "Arabic (Palestine)",
+                          },
+                          {
+                            label: "Arabic (Libya)",
+                            value: "Arabic (Libya)",
+                          },
+                          {
+                            label: "Arabic (Algeria)",
+                            value: "Arabic (Algeria)",
+                          },
+                          {
+                            label: "Arabic (Morocco)",
+                            value: "Arabic (Morocco)",
+                          },
+                          {
+                            label: "Arabic (Tunisia)",
+                            value: "Arabic (Tunisia)",
+                          },
+                          {
+                            label: "Arabic (Sudan)",
+                            value: "Arabic (Sudan)",
+                          },
+                          {
+                            label: "Arabic (Mauritania)",
+                            value: "Arabic (Mauritania)",
+                          },
+                          {
+                            label: "Persian (Iran)",
+                            value: "Persian (Iran)",
+                          },
+                          {
+                            label: "Kurdish (Iraq)",
+                            value: "Kurdish (Iraq)",
+                          },
+                          {
+                            label: "Kurdish (Syria)",
+                            value: "Kurdish (Syria)",
+                          },
+                          {
+                            label: "Kurdish (Turkey)",
+                            value: "Kurdish (Turkey)",
+                          },
+                          {
+                            label: "Turkish (Turkey)",
+                            value: "Turkish (Turkey)",
+                          },
+                          {
+                            label: "Hebrew (Israel)",
+                            value: "Hebrew (Israel)",
+                          },
+                          {
+                            label: "Armenian (Armenia)",
+                            value: "Armenian (Armenia)",
+                          },
+                          {
+                            label: "Berber (Morocco)",
+                            value: "Berber (Morocco)",
+                          },
+                          {
+                            label: "Berber (Algeria)",
+                            value: "Berber (Algeria)",
+                          },
+                          {
+                            label: "Coptic (Egypt)",
+                            value: "Coptic (Egypt)",
+                          },
+                          {
+                            label: "Dari (Afghanistan)",
+                            value: "Dari (Afghanistan)",
+                          },
+                          {
+                            label: "Pashto (Afghanistan)",
+                            value: "Pashto (Afghanistan)",
+                          },
+                          {
+                            label: "Balochi (Pakistan)",
+                            value: "Balochi (Pakistan)",
+                          },
+                          {
+                            label: "Sindhi (Pakistan)",
+                            value: "Sindhi (Pakistan)",
+                          },
+                          {
+                            label: "Assyrian Neo-Aramaic (Iraq)",
+                            value: "Assyrian Neo-Aramaic (Iraq)",
+                          },
+                          {
+                            label: "Chaldean Neo-Aramaic (Iraq)",
+                            value: "Chaldean Neo-Aramaic (Iraq)",
+                          },
+                          {
+                            label: "Circassian (Jordan)",
+                            value: "Circassian (Jordan)",
+                          },
+                          {
+                            label: "Chechen (Jordan)",
+                            value: "Chechen (Jordan)",
+                          },
+                          {
+                            label: "Domari (Middle East)",
+                            value: "Domari (Middle East)",
+                          },
+                          {
+                            label: "Gilaki (Iran)",
+                            value: "Gilaki (Iran)",
+                          },
+                          {
+                            label: "Luri (Iran)",
+                            value: "Luri (Iran)",
+                          },
+                          {
+                            label: "Mazanderani (Iran)",
+                            value: "Mazanderani (Iran)",
+                          },
+                          {
+                            label: "Nubian (Egypt)",
+                            value: "Nubian (Egypt)",
+                          },
+                          {
+                            label: "Saraiki (Pakistan)",
+                            value: "Saraiki (Pakistan)",
+                          },
+                          {
+                            label: "Shabaki (Iraq)",
+                            value: "Shabaki (Iraq)",
+                          },
+                          {
+                            label: "Talysh (Azerbaijan)",
+                            value: "Talysh (Azerbaijan)",
+                          },
+                          {
+                            label: "Tat (Azerbaijan)",
+                            value: "Tat (Azerbaijan)",
+                          },
+                          {
+                            label: "Zaza (Turkey)",
+                            value: "Zaza (Turkey)",
+                          },
+                        ]}
+                        value={language}
+                        onChange={(value) => setLanguage(value)}
+                      />
+                      {/* <InlineStack gap="200" wrap={false}>
+                        <div style={{ minWidth: "115px" }}>
+                          <ButtonGroup variant="segmented">
+                            <Popover
+                              active={modelPopoverActive}
+                              preferredAlignment="right"
+                              activator={
+                                <Button
+                                  variant="tertiary"
+                                  onClick={() =>
+                                    setModelPopoverActive(!modelPopoverActive)
+                                  }
+                                  disclosure
+                                >
+                                  {model}
+                                </Button>
+                              }
+                              autofocusTarget="first-node"
+                              onClose={() => setModelPopoverActive(false)}
+                            >
+                              <ActionList
+                                actionRole="menuitem"
+                                items={[
+                                  {
+                                    content: "GPT-4.1 Mini",
+                                    onAction: () =>
+                                      handleModelChange("GPT-4.1 Mini"),
+                                  },
+                                ]}
+                              />
+                            </Popover>
+                          </ButtonGroup>
+                        </div> */}
+                      <Button
+                        fullWidth
+                        variant="primary"
+                        icon={MagicIcon}
+                        onClick={handleGenerate}
+                        loading={isGenerating}
+                      >
+                        Generate
+                      </Button>
+                      {/* </InlineStack> */}
+                    </BlockStack>
+                  </Grid.Cell>
+                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 8 }}>
+                    <div
+                      className={
+                        styles.Ciwi_QuickGenerator_Result +
+                        " " +
+                        (editedData && !isEdit ? styles.hasResult : "") +
+                        " " +
+                        (isEdit ? styles.isEdit : "")
+                      }
+                    >
+                      {!editedData && !isGenerating ? (
+                        <div
+                          className={styles.Ciwi_QuickGenerator_Result_Empty}
+                        >
+                          <Text as="p" variant="bodyMd">
+                            Generated content will appear here
+                          </Text>
+                        </div>
+                      ) : null}
+                      {isGenerating ? (
+                        <div
+                          className={styles.Ciwi_QuickGenerator_Result_Loading}
+                        >
+                          <SkeletonBodyText lines={10} />
+                        </div>
+                      ) : null}
+                      {editedData && !isGenerating ? (
+                        <div
+                          className={styles.Ciwi_QuickGenerator_Result_Content}
+                        >
+                          {isEdit ? (
+                            <div
+                              className={
+                                styles.Ciwi_QuickGenerator_Result_Editor
+                              }
+                            >
+                              <ReactQuill
+                                value={editedData.description}
+                                onChange={(value) =>
+                                  setEditedData({
+                                    ...editedData,
+                                    description: value,
+                                  })
+                                }
+                                style={{ height: "850px" }}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className={
+                                styles.Ciwi_QuickGenerator_Result_Markdown
+                              }
+                            >
+                              <div
+                                dangerouslySetInnerHTML={{
+                                  __html: editedData.description,
+                                }}
+                              />
+                            </div>
+                          )}
+                          <div
+                            className={
+                              styles.Ciwi_QuickGenerator_Result_Feedback +
+                              " " +
+                              (isEdit ? styles.Edit_Button : "")
+                            }
+                          >
+                            {isEdit ? (
+                              <ButtonGroup>
+                                <Button onClick={handleConfirm}>Confirm</Button>
+                                <Button onClick={handleCancel}>Cancel</Button>
+                              </ButtonGroup>
+                            ) : (
+                              <>
+                                <ButtonGroup>
+                                  <Button
+                                    onClick={handlePublish}
+                                    loading={
+                                      publishFetcher.state === "submitting"
+                                    }
+                                  >
+                                    Publish
+                                  </Button>
+                                  <Button onClick={handleEdit}>Edit</Button>
+                                </ButtonGroup>
+                                {/* <InlineStack gap="100">
                                                                     <Button icon={ClipboardIcon} variant="tertiary" />
                                                                     <Button icon={ThumbsUpIcon} variant="tertiary" />
                                                                     <Button icon={ThumbsDownIcon} variant="tertiary" />
                                                                 </InlineStack> */}
-                                                            </>
-                                                        }
-                                                    </div>
-                                                </div> : null}
-                                            </div>
-                                        </Grid.Cell>
-                                    </Grid>
-                                </BlockStack>
-                            </Card>
-                        </Layout.Section>
-                    </Layout>
-                </BlockStack>
-            </Page >)
-            :
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    height: "100vh"
-                }}
-            >
-                <Spinner />
-            </div>
-    )
-}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </Grid.Cell>
+                </Grid>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        </Layout>
+      </BlockStack>
+    </Page>
+  );
+  //   );
+};
 
 export const removeHtmlTags = (str: string) => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(str, 'text/html');
-    return doc.body.textContent || '';
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(str, "text/html");
+  return doc.body.textContent || "";
 };
 
 export default Index;
