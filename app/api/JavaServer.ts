@@ -147,10 +147,11 @@ export const GetTemplateByShopName = async ({
 }) => {
   try {
     const response = await axios.post(
-      `${server}/apg/template/getTemplateByShopName?shopName=${shop}`,
+      `${server}/apg/template/getAllTemplateData?shopName=${shop}`,
       {
         templateModel: pageType,
         templateSubtype: contentType,
+
       },
     );
     return response.data;
