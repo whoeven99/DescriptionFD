@@ -10,6 +10,7 @@ import {
   InlineStack,
   Page,
   Popover,
+  Spinner,
   Tabs,
 } from "@shopify/polaris";
 import { authenticate } from "app/shopify.server";
@@ -17,7 +18,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import TemplateCard from "app/components/templateCard";
 import { Modal, TitleBar } from "@shopify/app-bridge-react";
 import { useLoaderData, useNavigate } from "@remix-run/react";
-import axios from "axios";
+import { GetAllTemplateData, GetTemplateByShopName } from "app/api/JavaServer";
+import CardSkeleton from "app/components/cardSkeleton";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const adminAuthResult = await authenticate.admin(request);
@@ -30,58 +32,94 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 const Index = () => {
   const navigate = useNavigate();
+
   const { shop, server } = useLoaderData<typeof loader>();
   const [mainSelected, setMainSelected] = useState(0);
   const [secondarySelected, setSecondarySelected] = useState(0);
   const [descriptionSelected, setDescriptionSelected] = useState<
-    "Description" | "SEODescription"
-  >("Description");
+    "description" | "seo"
+  >("description");
+  const [templateTypeSelected, setTemplateTypeSelected] =
+    useState<string>("Beauty & Skincare");
   const [previewModal, setPreviewModal] = useState<any>(null);
-  const [active, setActive] = useState<string | null>(null);
-  const [templates, setTemplates] = useState<any>(null);
-
-  const filterTemplates = useMemo(() => {
-    if (!templates) return [];
-    const list = templates[mainSelected]?.[descriptionSelected] || [];
-    return list.filter((template: any) => {
-      if (secondarySelected === 0) return true; // "All" 标签
-      if (secondarySelected === 1) return template.type === "product"; // "Product" 标签
-      if (secondarySelected === 2) return template.type === "collection"; // "Collection" 标签
-      return true;
-    });
-  }, [templates, mainSelected, descriptionSelected, secondarySelected]);
+  const [popoverOneActive, setPopoverOneActive] = useState<string | null>(null);
+  const [popoverTwoActive, setPopoverTwoActive] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<any>([]);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCardLoading, setIsCardLoading] = useState(true);
+  const [addButtonLoading, setAddButtonLoading] = useState<string[]>([]);
+  // const filterTemplates = useMemo(() => {
+  //   if (!templates) return [];
+  //   const list = templates[mainSelected]?.[descriptionSelected] || [];
+  //   return list.filter((template: any) => {
+  //     if (secondarySelected === 0) return true; // "All" 标签
+  //     if (secondarySelected === 1) return template.type === "product"; // "Product" 标签
+  //     if (secondarySelected === 2) return template.type === "collection"; // "Collection" 标签
+  //     return true;
+  //   });
+  // }, [templates, mainSelected, descriptionSelected, secondarySelected]);
 
   useEffect(() => {
-    async function fetchTemplates() {
-      const response = await axios.post(
-        `${server}/apg/template/getAllTemplateData?shopName=${shop}`,
-      );
-      if (response.data.success) {
-        const data = response.data.response;
-        setTemplates({
-          0: {
-            Description: filterAndMapTemplates(data, "system", 0),
-            SEODescription: filterAndMapTemplates(data, "system", 1),
-          },
-          1: {
-            Description: filterAndMapTemplates(data, "custom", 0),
-            SEODescription: filterAndMapTemplates(data, "custom", 1),
-          },
-        });
+    setIsLoading(false);
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    setIsCardLoading(true);
+    setTemplates([]);
+    const fetchTemplates = async () => {
+      const response = await GetAllTemplateData({
+        server: server as string,
+        shop: shop as string,
+        pageType:
+          secondarySelected == 0
+            ? null
+            : secondarySelected == 1
+              ? "product"
+              : "collection",
+        contentType: descriptionSelected,
+        templateType: mainSelected ? null : templateTypeSelected,
+        templateClass: mainSelected ? true : false,
+      });
+      if (response.success) {
+        setTemplates(response.response);
       } else {
         setTemplates(null);
       }
-    }
+      setIsCardLoading(false);
+    };
     fetchTemplates();
-  }, []);
+  }, [
+    mainSelected,
+    secondarySelected,
+    descriptionSelected,
+    templateTypeSelected,
+  ]);
 
-  const toggleActive = (id: string) => () => {
-    setActive((activeId) => (activeId !== id ? id : null));
+  const togglePopoverOneActive = (id: string) => () => {
+    setPopoverOneActive((activeId) => (activeId !== id ? id : null));
   };
 
-  const handleDescriptionChange = (value: "Description" | "SEODescription") => {
+  const togglePopoverTwoActive = (id: string) => () => {
+    setPopoverTwoActive((activeId) => (activeId !== id ? id : null));
+  };
+
+  const handleDescriptionChange = (value: "description" | "seo") => {
     setDescriptionSelected(value);
-    setActive(null);
+    setPopoverOneActive(null);
+  };
+
+  const handleTemplateTypeChange = (value: string) => {
+    setTemplateTypeSelected(value);
+    setPopoverTwoActive(null);
   };
 
   const handleMainTabChange = useCallback(
@@ -142,80 +180,414 @@ const Index = () => {
       title="Template"
       subtitle="Customize and organize your content generation templates"
       compactTitle
-      primaryAction={{
-        content: "Create template",
-        onAction: () => {
-          navigate("/app/template/create");
-        },
-      }}
+      // primaryAction={{
+      //   content: "Create template",
+      //   onAction: () => {
+      //     navigate("/app/template/create");
+      //   },
+      // }}
     >
-      <Card background="bg-surface" padding={"200"}>
-        <Box>
-          <Tabs
-            tabs={mainTabs}
-            selected={mainSelected}
-            onSelect={handleMainTabChange}
-          />
-        </Box>
-        <InlineStack align="space-between" wrap={false} direction="row">
-          <Tabs
-            tabs={secondaryTabs}
-            selected={secondarySelected}
-            onSelect={handleSecondaryTabChange}
-          />
-          <Box paddingInlineEnd={{ xs: "200" }}>
-            <ButtonGroup variant="segmented">
-              <Popover
-                active={active === "popover1"}
-                preferredAlignment="right"
-                activator={
-                  <Button
-                    variant="tertiary"
-                    onClick={toggleActive("popover1")}
-                    disclosure
-                  >
-                    {descriptionSelected == "SEODescription"
-                      ? "SEO Description"
-                      : "Description"}
-                  </Button>
-                }
-                autofocusTarget="first-node"
-                onClose={toggleActive("popover1")}
-              >
-                <ActionList
-                  actionRole="menuitem"
-                  items={[
-                    {
-                      content: "Description",
-                      onAction: () => handleDescriptionChange("Description"),
-                    },
-                    {
-                      content: "SEO Description",
-                      onAction: () => handleDescriptionChange("SEODescription"),
-                    },
-                  ]}
-                />
-              </Popover>
-            </ButtonGroup>
+      {isLoading ? (
+        <CardSkeleton height="500px" />
+      ) : (
+        <Card background="bg-surface" padding={"200"}>
+          <Box>
+            <Tabs
+              tabs={mainTabs}
+              selected={mainSelected}
+              onSelect={handleMainTabChange}
+            />
           </Box>
-        </InlineStack>
-        <Box padding={"200"}>
-          {filterTemplates?.length > 0 ? (
-            <Grid>
-              {filterTemplates.map((template: any) => (
-                <Grid.Cell
-                  key={template.id}
-                  columnSpan={{ xs: 6, sm: 3, md: 3, lg: 4, xl: 4 }}
+          {isMobile ? (
+            <BlockStack>
+              <Tabs
+                tabs={secondaryTabs}
+                selected={secondarySelected}
+                onSelect={handleSecondaryTabChange}
+              />
+              <Box paddingInlineEnd={{ xs: "200" }}>
+                <ButtonGroup>
+                  <Popover
+                    active={popoverOneActive == "popover1"}
+                    preferredAlignment="right"
+                    activator={
+                      <Button
+                        variant="tertiary"
+                        onClick={togglePopoverOneActive("popover1")}
+                        disclosure
+                      >
+                        {templateTypeSelected}
+                      </Button>
+                    }
+                    autofocusTarget="first-node"
+                    onClose={togglePopoverOneActive("popover1")}
+                  >
+                    <ActionList
+                      actionRole="menuitem"
+                      items={[
+                        {
+                          content: "Beauty & Skincare",
+                          onAction: () =>
+                            handleTemplateTypeChange("Beauty & Skincare"),
+                        },
+                        {
+                          content: "Fashion & Apparel",
+                          onAction: () =>
+                            handleTemplateTypeChange("Fashion & Apparel"),
+                        },
+                        {
+                          content: "Health & Wellness",
+                          onAction: () =>
+                            handleTemplateTypeChange("Health & Wellness"),
+                        },
+                        {
+                          content: "Home & Living",
+                          onAction: () =>
+                            handleTemplateTypeChange("Home & Living"),
+                        },
+                        {
+                          content: "Electronics",
+                          onAction: () =>
+                            handleTemplateTypeChange("Electronics"),
+                        },
+                        {
+                          content: "Car Accessories",
+                          onAction: () =>
+                            handleTemplateTypeChange("Car Accessories"),
+                        },
+                        {
+                          content: "Furniture",
+                          onAction: () => handleTemplateTypeChange("Furniture"),
+                        },
+                        {
+                          content: "Kitchen Supplies",
+                          onAction: () =>
+                            handleTemplateTypeChange("Kitchen Supplies"),
+                        },
+                        {
+                          content: "Jewelry & Accessories",
+                          onAction: () =>
+                            handleTemplateTypeChange("Jewelry & Accessories"),
+                        },
+                        {
+                          content: "Makeup",
+                          onAction: () => handleTemplateTypeChange("Makeup"),
+                        },
+                        {
+                          content: "Headphones",
+                          onAction: () =>
+                            handleTemplateTypeChange("Headphones"),
+                        },
+                        {
+                          content: "Baby & Kids",
+                          onAction: () =>
+                            handleTemplateTypeChange("Baby & Kids"),
+                        },
+                        {
+                          content: "Sports & Outdoors",
+                          onAction: () =>
+                            handleTemplateTypeChange("Sports & Outdoors"),
+                        },
+                        {
+                          content: "Pet Supplies",
+                          onAction: () =>
+                            handleTemplateTypeChange("Pet Supplies"),
+                        },
+                        {
+                          content: "Women’s Clothing",
+                          onAction: () =>
+                            handleTemplateTypeChange("Women’s Clothing"),
+                        },
+                        {
+                          content: "Shoes",
+                          onAction: () => handleTemplateTypeChange("Shoes"),
+                        },
+                        {
+                          content: "Home Decor",
+                          onAction: () =>
+                            handleTemplateTypeChange("Home Decor"),
+                        },
+                        {
+                          content: "Smartwatches",
+                          onAction: () =>
+                            handleTemplateTypeChange("Smartwatches"),
+                        },
+                        {
+                          content: "Men’s Clothing",
+                          onAction: () =>
+                            handleTemplateTypeChange("Men’s Clothing"),
+                        },
+                        {
+                          content: "Bags & Luggage",
+                          onAction: () =>
+                            handleTemplateTypeChange("Bags & Luggage"),
+                        },
+                        {
+                          content: "Skincare",
+                          onAction: () => handleTemplateTypeChange("Skincare"),
+                        },
+                      ]}
+                    />
+                  </Popover>
+                  <Popover
+                    active={popoverTwoActive == "popover2"}
+                    preferredAlignment="right"
+                    activator={
+                      <Button
+                        variant="tertiary"
+                        onClick={togglePopoverTwoActive("popover2")}
+                        disclosure
+                      >
+                        {descriptionSelected == "seo"
+                          ? "SEO Description"
+                          : "Description"}
+                      </Button>
+                    }
+                    autofocusTarget="first-node"
+                    onClose={togglePopoverTwoActive("popover2")}
+                  >
+                    <ActionList
+                      actionRole="menuitem"
+                      items={[
+                        {
+                          content: "Description",
+                          onAction: () =>
+                            handleDescriptionChange("description"),
+                        },
+                        {
+                          content: "SEO Description",
+                          onAction: () => handleDescriptionChange("seo"),
+                        },
+                      ]}
+                    />
+                  </Popover>
+                </ButtonGroup>
+              </Box>
+            </BlockStack>
+          ) : (
+            <InlineStack
+              align="space-between"
+              wrap={false}
+              direction="row"
+              blockAlign="center"
+            >
+              <Tabs
+                tabs={[
+                  {
+                    id: "all-templates",
+                    content: "All",
+                    accessibilityLabel: "All",
+                    panelID: "all-templates",
+                  },
+                  {
+                    id: "product-templates",
+                    content: "Product",
+                    panelID: "product-templates",
+                  },
+                  {
+                    id: "collection-templates",
+                    content: "Collection",
+                    panelID: "collection-templates",
+                  },
+                ]}
+                selected={secondarySelected}
+                onSelect={handleSecondaryTabChange}
+              />
+              <Box paddingInlineEnd={{ xs: "200" }}>
+                <ButtonGroup>
+                  {!mainSelected && (
+                    <Popover
+                      active={popoverOneActive == "popover1"}
+                      preferredAlignment="right"
+                      activator={
+                        <Button
+                          variant="tertiary"
+                          onClick={togglePopoverOneActive("popover1")}
+                          disclosure
+                        >
+                          {templateTypeSelected}
+                        </Button>
+                      }
+                      autofocusTarget="first-node"
+                      onClose={togglePopoverOneActive("popover1")}
+                    >
+                      <ActionList
+                        actionRole="menuitem"
+                        items={[
+                          {
+                            content: "Beauty & Skincare",
+                            onAction: () =>
+                              handleTemplateTypeChange("Beauty & Skincare"),
+                          },
+                          {
+                            content: "Fashion & Apparel",
+                            onAction: () =>
+                              handleTemplateTypeChange("Fashion & Apparel"),
+                          },
+                          {
+                            content: "Health & Wellness",
+                            onAction: () =>
+                              handleTemplateTypeChange("Health & Wellness"),
+                          },
+                          {
+                            content: "Home & Living",
+                            onAction: () =>
+                              handleTemplateTypeChange("Home & Living"),
+                          },
+                          {
+                            content: "Electronics",
+                            onAction: () =>
+                              handleTemplateTypeChange("Electronics"),
+                          },
+                          {
+                            content: "Car Accessories",
+                            onAction: () =>
+                              handleTemplateTypeChange("Car Accessories"),
+                          },
+                          {
+                            content: "Furniture",
+                            onAction: () =>
+                              handleTemplateTypeChange("Furniture"),
+                          },
+                          {
+                            content: "Kitchen Supplies",
+                            onAction: () =>
+                              handleTemplateTypeChange("Kitchen Supplies"),
+                          },
+                          {
+                            content: "Jewelry & Accessories",
+                            onAction: () =>
+                              handleTemplateTypeChange("Jewelry & Accessories"),
+                          },
+                          {
+                            content: "Makeup",
+                            onAction: () => handleTemplateTypeChange("Makeup"),
+                          },
+                          {
+                            content: "Headphones",
+                            onAction: () =>
+                              handleTemplateTypeChange("Headphones"),
+                          },
+                          {
+                            content: "Baby & Kids",
+                            onAction: () =>
+                              handleTemplateTypeChange("Baby & Kids"),
+                          },
+                          {
+                            content: "Sports & Outdoors",
+                            onAction: () =>
+                              handleTemplateTypeChange("Sports & Outdoors"),
+                          },
+                          {
+                            content: "Pet Supplies",
+                            onAction: () =>
+                              handleTemplateTypeChange("Pet Supplies"),
+                          },
+                          {
+                            content: "Women’s Clothing",
+                            onAction: () =>
+                              handleTemplateTypeChange("Women’s Clothing"),
+                          },
+                          {
+                            content: "Shoes",
+                            onAction: () => handleTemplateTypeChange("Shoes"),
+                          },
+                          {
+                            content: "Home Decor",
+                            onAction: () =>
+                              handleTemplateTypeChange("Home Decor"),
+                          },
+                          {
+                            content: "Smartwatches",
+                            onAction: () =>
+                              handleTemplateTypeChange("Smartwatches"),
+                          },
+                          {
+                            content: "Men’s Clothing",
+                            onAction: () =>
+                              handleTemplateTypeChange("Men’s Clothing"),
+                          },
+                          {
+                            content: "Bags & Luggage",
+                            onAction: () =>
+                              handleTemplateTypeChange("Bags & Luggage"),
+                          },
+                          {
+                            content: "Skincare",
+                            onAction: () =>
+                              handleTemplateTypeChange("Skincare"),
+                          },
+                        ]}
+                      />
+                    </Popover>
+                  )}
+                  <Popover
+                    active={popoverTwoActive == "popover2"}
+                    preferredAlignment="right"
+                    activator={
+                      <Button
+                        variant="tertiary"
+                        onClick={togglePopoverTwoActive("popover2")}
+                        disclosure
+                      >
+                        {descriptionSelected == "seo"
+                          ? "SEO Description"
+                          : "Description"}
+                      </Button>
+                    }
+                    autofocusTarget="first-node"
+                    onClose={togglePopoverTwoActive("popover2")}
+                  >
+                    <ActionList
+                      actionRole="menuitem"
+                      items={[
+                        {
+                          content: "Description",
+                          onAction: () =>
+                            handleDescriptionChange("description"),
+                        },
+                        {
+                          content: "SEO Description",
+                          onAction: () => handleDescriptionChange("seo"),
+                        },
+                      ]}
+                    />
+                  </Popover>
+                </ButtonGroup>
+              </Box>
+            </InlineStack>
+          )}
+          {isCardLoading ? (
+            <Box paddingBlockStart={"2000"} paddingBlockEnd={"2000"}>
+              <InlineStack align="center" direction="row" wrap={true}>
+                <BlockStack
+                  gap="200"
+                  align="center"
+                  inlineAlign="center"
+                  reverseOrder
                 >
-                  <TemplateCard
-                    title={template.title}
-                    description={template.description}
-                    content={template.content}
-                    onClick={() => handlePreview(template)}
-                  />
-                </Grid.Cell>
-              ))}
-            </Grid>
+                  <Spinner />
+                </BlockStack>
+              </InlineStack>
+            </Box>
+          ) : templates?.length > 0 ? (
+            <Box padding={"200"}>
+              <Grid>
+                {templates.map((template: any) => (
+                  <Grid.Cell
+                    key={template.id}
+                    columnSpan={{ xs: 6, sm: 3, md: 3, lg: 4, xl: 4 }}
+                  >
+                    <TemplateCard
+                      title={template.templateTitle}
+                      description={template.templateDescription}
+                      content={template.templateData}
+                      onClick={() => handlePreview(template)}
+                    />
+                  </Grid.Cell>
+                ))}
+              </Grid>
+            </Box>
           ) : (
             <Box paddingBlockStart={"2000"} paddingBlockEnd={"2000"}>
               <InlineStack align="center" direction="row" wrap={true}>
@@ -230,17 +602,17 @@ const Index = () => {
               </InlineStack>
             </Box>
           )}
-        </Box>
-      </Card>
+        </Card>
+      )}
       <Modal id="preview-modal">
         <Box padding="400">
           <div
             dangerouslySetInnerHTML={{
-              __html: previewModal?.content.replace(/\n/g, "<br/>"),
+              __html: previewModal?.templateData.replace(/\n/g, "<br/>"),
             }}
           />
         </Box>
-        <TitleBar title={previewModal?.title}>
+        <TitleBar title={previewModal?.templateTitle}>
           <button onClick={handleClosePreview}>Close</button>
         </TitleBar>
       </Modal>

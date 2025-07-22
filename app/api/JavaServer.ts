@@ -147,11 +147,45 @@ export const GetTemplateByShopName = async ({
 }) => {
   try {
     const response = await axios.post(
+      `${server}/apg/template/getTemplateByShopName?shopName=${shop}`,
+      {
+        templateModel: pageType,
+        templateSubtype: contentType,
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
+      message: "Error GetTemplateByShopName",
+    };
+  }
+};
+
+export const GetAllTemplateData = async ({
+  server,
+  shop,
+  pageType,
+  contentType,
+  templateType,
+  templateClass,
+}: {
+  server: string;
+  shop: string;
+  pageType: string | null;
+  contentType: string;
+  templateType: string | null;
+  templateClass: boolean;
+}) => {
+  try {
+    const response = await axios.post(
       `${server}/apg/template/getAllTemplateData?shopName=${shop}`,
       {
         templateModel: pageType,
         templateSubtype: contentType,
-
+        templateType: templateType,
+        templateClass: templateClass,
       },
     );
     return response.data;
