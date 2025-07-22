@@ -508,9 +508,9 @@ const Index = () => {
             >
               Create content
             </Button>
-            <Button variant="tertiary" onClick={() => setOpen(true)}>
+            {/* <Button variant="tertiary" onClick={() => setOpen(true)}>
               Edit
-            </Button>
+            </Button> */}
           </InlineStack>
         </IndexTable.Cell>
       </IndexTable.Row>
