@@ -65,7 +65,6 @@ export default function App() {
         </Link>
         <Link to="/app/batchGeneration">Batch Generation</Link>
         <Link to="/app/template">Template</Link>
-        <Link to="/app/contentManagement">Content Management</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>
