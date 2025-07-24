@@ -1,37 +1,34 @@
-import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
-import { Modal, TitleBar } from "@shopify/app-bridge-react";
 import {
-  Text,
-  IndexFilters,
-  IndexTable,
-  Layout,
-  Page,
-  useIndexResourceState,
-  TabProps,
-  useSetIndexFiltersMode,
-  Button,
-  Box,
   BlockStack,
+  Box,
+  Button,
+  ButtonGroup,
   Divider,
+  IndexTable,
   InlineStack,
+  Page,
   Select,
-  Card,
-  Thumbnail,
-  Badge,
-  Tag,
+  Spinner,
+  Text,
   TextField,
+  useIndexResourceState,
 } from "@shopify/polaris";
+import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
+import SideMenu from "app/components/sideMenu";
+import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dist/shared/lib/dynamic";
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+import "react-quill/dist/quill.snow.css";
 import {
-  BatchGenerateDescription,
+  GenerateDescription,
+  GetProductsByListId,
   GetTemplateByShopName,
   GetUserData,
-  GetProductsByListId,
 } from "app/api/JavaServer";
-import CardSkeleton from "app/components/cardSkeleton";
-import DetailProgress from "app/components/detailProgress";
+import { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { removeHtmlTags } from "./app._index/route";
+import { Modal, TitleBar } from "@shopify/app-bridge-react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const adminAuthResult = await authenticate.admin(request);
@@ -50,60 +47,102 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const adminAuthResult = (await authenticate.admin(request)).session;
-  const { shop } = adminAuthResult;
-  const formData = await request.formData();
-  const batchGenerationData = JSON.parse(
-    formData.get("batchGenerationData") as string,
-  );
-
-  try {
-    const response = await BatchGenerateDescription({
-      shop: shop as string,
-      language: batchGenerationData.language,
-      productIds: batchGenerationData.productIds,
-      pageType: "product",
-      contentType: batchGenerationData.contentType,
-      languageStyle: batchGenerationData.languageStyle,
-      brandStyle: batchGenerationData.brandStyle,
-      templateId: Number(batchGenerationData.template),
-      templateType: false,
-      model: batchGenerationData.model,
-      seoKeywords: batchGenerationData.seoKeywords,
-      brandWord: batchGenerationData.brandWord,
-      brandSlogan: batchGenerationData.brandSlogan,
-    });
-
-    return response;
-  } catch (error) {
-    console.error(error);
-    // return { error: "Failed to generate description" };
-  }
-};
-
 const Index = () => {
-  const { server, shop } = useLoaderData<typeof loader>();
-  const navigate = useNavigate();
+  const { shop, server } = useLoaderData<typeof loader>();
 
+  const navigate = useNavigate();
   const [data, setData] = useState<any[]>([]);
-  const [pagination, setPagination] = useState({
-    hasNextPage: false,
-    hasPreviousPage: false,
-    startCursor: "",
-    endCursor: "",
-  });
-  const [selected, setSelected] = useState(0);
-  const [queryValue, setQueryValue] = useState<string>("");
-  const [open, setOpen] = useState<boolean>(false);
-  const [updateTime, setUpdateTime] = useState<string[]>([]);
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
     useIndexResourceState(data);
-  const { mode, setMode } = useSetIndexFiltersMode();
-
-  const [contentType, setContentType] = useState<
-    "Description" | "SEODescription"
-  >("Description");
+  const [selectedLanguage, setSelectedLanguage] = useState("English");
+  const [menuItems, setMenuItems] = useState([
+    {
+      title: "Product Description Product Description",
+      id: "productDescription1",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription2",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription3",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription4",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription5",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription6",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription7",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription8",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription9",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription10",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription11",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription12",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription13",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription14",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription15",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription16",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription17",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription18",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription19",
+    },
+    {
+      title: "Product Description",
+      id: "productDescription20",
+    },
+  ]);
+  const [activeItem, setActiveItem] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [brandStyle, setBrandStyle] = useState<string>("");
   const [languageStyle, setLanguageStyle] = useState<string>("formal");
@@ -113,11 +152,151 @@ const Index = () => {
   const [focusSeoKeywordInput, setFocusSeoKeywordInput] =
     useState<boolean>(false);
   const [seoKeyword, setSeoKeyword] = useState<string>("");
-  const [seoKeywordTags, setSeoKeywordTags] = useState<string[]>([]);
   const [brand, setBrand] = useState<string>("");
   const [brandSlogan, setBrandSlogan] = useState<string>("");
   const [language, setLanguage] = useState<string>("English");
-  const [progress, setProgress] = useState<any>(null);
+  const [updateValue, setUpdateValue] = useState<string>("");
+
+  const productsFetcher = useFetcher<any>();
+  const publishFetcher = useFetcher<any>();
+
+  useEffect(() => {
+    progressDataUpdate();
+  }, []);
+
+  useEffect(() => {
+    if (productsFetcher.data) {
+      if (productsFetcher.data.success) {
+        setMenuItems(productsFetcher.data.response);
+        setActiveItem(productsFetcher.data.response[0]?.id);
+        setLoading(false);
+      }
+    }
+  }, [productsFetcher.data]);
+
+  useEffect(() => {
+    setTemplate("");
+    setTemplates([]);
+    const fetchTemplates = async () => {
+      const response = await GetTemplateByShopName({
+        server: server as string,
+        shop: shop as string,
+        pageType: data[0]?.pageType || "",
+        contentType: data[0]?.contentType || "",
+      });
+
+      if (response.success) {
+        setTemplates(response.response);
+        setTemplate(response.response[0].id.toString());
+      } else {
+        setTemplates([]);
+      }
+    };
+    fetchTemplates();
+  }, [data]);
+
+  useEffect(() => {
+    if (activeItem) {
+      setTableLoading(true);
+      setData([]);
+      const UpdateData = async () => {
+        const response = await GetProductsByListId({
+          server: server as string,
+          shop: shop as string,
+          listId: [activeItem],
+        });
+        if (response.success) {
+          const html = handleSetValue(
+            response.response[0].generateContent || "",
+          );
+          setData([
+            {
+              ...response.response[0],
+              generateContent: html,
+            },
+          ]);
+          setUpdateValue(html);
+        }
+        setTableLoading(false);
+      };
+      UpdateData();
+    }
+  }, [activeItem]);
+
+  const handleSetValue = (text: string) => {
+    // 先去除首尾空行，再按行分割，每行用 <p> 包裹
+    const html = text
+      .trim()
+      .split("\n")
+      .map((line) => `<p>${line}</p>`)
+      .join("");
+    return html;
+  };
+
+  const progressDataUpdate = async () => {
+    const response = await GetUserData({
+      server: server as string,
+      shop: shop as string,
+    });
+    if (response.success) {
+      const productIds = JSON.parse(response.response.taskData)?.productIds;
+      productsFetcher.submit(
+        { productIds },
+        {
+          method: "POST",
+          action: "/getProductInfoByIds",
+        },
+      );
+    }
+  };
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    const response = await GenerateDescription({
+      server: server as string,
+      shop: shop as string,
+      pageType: data[0]?.pageType || "",
+      contentType: data[0]?.contentType || "",
+      productId: activeItem,
+      languageStyle,
+      brandStyle,
+      templateId: Number(template),
+      templateType: false,
+      model: model,
+      language,
+      seoKeywords: seoKeyword,
+      brandWord: brand || "",
+      brandSlogan: brandSlogan || "",
+    });
+    if (response.success && isGenerating) {
+      setIsGenerating(false);
+      const html = handleSetValue(response.response.description);
+      setUpdateValue(html);
+      setOpen(false);
+      shopify.toast.show("Description generated successfully");
+    } else {
+      setIsGenerating(false);
+      shopify.toast.show("Failed to generate description");
+    }
+  };
+
+  const handlePublish = (id: string) => {
+    publishFetcher.submit(
+      {
+        id: activeItem,
+        pageType: data.find((item) => item.id === id)?.pageType,
+        contentType: data.find((item) => item.id === id)?.contentType,
+        description:
+          data.find((item) => item.id === id)?.contentType === "seo"
+            ? removeHtmlTags(updateValue)
+            : updateValue,
+      },
+      {
+        method: "POST",
+        action: "/descriptionPublish",
+      },
+    );
+  };
 
   const brandStyleOptions = useMemo(
     () => [
@@ -313,285 +492,8 @@ const Index = () => {
     [],
   );
 
-  const seoKeywordTagsMarkup = useMemo(() => {
-    return seoKeywordTags.length > 0 ? (
-      <InlineStack gap="200">
-        {seoKeywordTags.map((tag) => (
-          <Tag
-            key={tag}
-            onRemove={() =>
-              setSeoKeywordTags(seoKeywordTags.filter((t) => t !== tag))
-            }
-          >
-            {tag}
-          </Tag>
-        ))}
-      </InlineStack>
-    ) : null;
-  }, [seoKeywordTags]);
-
-  const fetcher = useFetcher<any>();
-  const generateFetcher = useFetcher<any>();
-
-  useEffect(() => {
-    fetcher.submit(
-      { query: queryValue, pageSize: 20 },
-      { method: "POST", action: "/getProductInfo" },
-    );
-  }, []);
-
-  useEffect(() => {
-    if (progress?.taskStatus === 2 || !progress) {
-      setTimeout(() => {
-        progressDataUpdate();
-      }, 5000);
-    }
-  }, [progress]);
-
-  useEffect(() => {
-    const queryText =
-      selected === 0
-        ? "" + queryValue
-        : selected === 1
-          ? "status:ACTIVE " + queryValue
-          : selected === 2
-            ? "status:DRAFT " + queryValue
-            : "status:ARCHIVED " + queryValue;
-    fetcher.submit(
-      { query: queryText, pageSize: 20 },
-      { method: "POST", action: "/getProductInfo" },
-    );
-    setData([]);
-  }, [queryValue]);
-
-  // useEffect(() => {
-  //   const handleKeyDown = (e: KeyboardEvent) => {
-  //     if (e.key === "Enter" && seoKeyword && focusSeoKeywordInput) {
-  //       if (seoKeywordTags.includes(seoKeyword)) {
-  //         shopify.toast.show(`SEO Keyword ${seoKeyword} already exists`);
-  //         return;
-  //       }
-  //       if (seoKeywordTags.length >= 3) {
-  //         shopify.toast.show("You can only add up to 3 SEO keywords");
-  //         return;
-  //       }
-  //       setSeoKeywordTags((prev) => [...prev, seoKeyword]);
-  //       setSeoKeyword("");
-  //     }
-  //   };
-
-  //   window.addEventListener("keydown", handleKeyDown);
-
-  //   // 清除上一个监听
-  //   return () => {
-  //     window.removeEventListener("keydown", handleKeyDown);
-  //   };
-  // }, [seoKeyword, focusSeoKeywordInput]);
-
-  useEffect(() => {
-    setData(
-      data.map((item: any) => ({
-        ...item,
-        updateTime: updateTime[item.id] || "--",
-      })),
-    );
-  }, [updateTime]);
-
-  useEffect(() => {
-    setTemplate("");
-    setTemplates([]);
-    const fetchTemplates = async () => {
-      const response = await GetTemplateByShopName({
-        server: server as string,
-        shop: shop as string,
-        pageType: "product",
-        contentType: contentType,
-      });
-
-      if (response.success) {
-        setTemplates(response.response);
-        setTemplate(response.response[0].id.toString());
-      } else {
-        setTemplates([]);
-      }
-    };
-    fetchTemplates();
-  }, [contentType]);
-
-  useEffect(() => {
-    if (fetcher.data) {
-      const data = fetcher.data.response.data.map((item: any) => ({
-        id: item.id,
-        productTitle: item.title,
-        productImageUrl: item.image,
-        status: item.status,
-        version: 1.0,
-      }));
-      setData(data);
-      setPagination({
-        hasNextPage: fetcher.data.response.hasNextPage,
-        hasPreviousPage: fetcher.data.response.hasPreviousPage,
-        startCursor: fetcher.data.response.startCursor,
-        endCursor: fetcher.data.response.endCursor,
-      });
-      const listId = fetcher.data.response.data.map((item: any) => item.id);
-      const getProductUpdateTime = async () => {
-        const response = await GetProductsByListId({
-          server: server as string,
-          shop: shop as string,
-          listId: listId,
-        });
-        if (response.response !== null) {
-          setUpdateTime(response.response.map((item: any) => item.updateTime));
-        } else {
-          setUpdateTime([]);
-        }
-      };
-
-      getProductUpdateTime();
-    }
-  }, [fetcher.data]);
-
-  useEffect(() => {
-    if (generateFetcher.data) {
-      if (generateFetcher.data.success) {
-        setProgress({
-          allCount: generateFetcher.data.response.allCount,
-          unfinishedCount: generateFetcher.data.response.unfinishedCount,
-          taskModel: generateFetcher.data.response.taskModel,
-          taskStatus: generateFetcher.data.response.taskStatus,
-        });
-        setOpen(false);
-        shopify.toast.show("Batch generation started");
-      } else {
-        shopify.toast.show("Batch generation failed");
-      }
-    }
-  }, [generateFetcher.data]);
-
-  const handleNextPage = () => {
-    fetcher.submit(
-      { query: queryValue, pageSize: 20, endCursor: pagination.endCursor },
-      { method: "POST", action: "/getProductInfo" },
-    );
-  };
-
-  const handlePreviousPage = () => {
-    fetcher.submit(
-      { query: queryValue, pageSize: 20, startCursor: pagination.startCursor },
-      { method: "POST", action: "/getProductInfo" },
-    );
-  };
-
-  const tabs: TabProps[] = [
-    {
-      id: "1",
-      content: "All",
-      onAction: () => {},
-    },
-    {
-      id: "2",
-      content: "Active",
-      onAction: () => {},
-    },
-    {
-      id: "3",
-      content: "Draft",
-      onAction: () => {},
-    },
-    {
-      id: "4",
-      content: "Archived",
-      onAction: () => {},
-    },
-  ];
-
-  const progressDataUpdate = async () => {
-    const response = await GetUserData({
-      server: server as string,
-      shop: shop as string,
-    });
-    if (response.success) {
-      setProgress(response.response);
-    }
-  };
-
-  const handleFiltersQueryChange = useCallback((value: string) => {
-    setQueryValue(value);
-  }, []);
-
-  const handleSelectedStatusChange = useCallback((value: number) => {
-    const queryText =
-      value === 0
-        ? ""
-        : value === 1
-          ? "status:ACTIVE"
-          : value === 2
-            ? "status:DRAFT"
-            : "status:ARCHIVED";
-    fetcher.submit(
-      { query: queryText, pageSize: 20 },
-      { method: "POST", action: "/getProductInfo" },
-    );
-    setData([]);
-    setSelected(value);
-  }, []);
-
-  const handleGenerate = useCallback(async () => {
-    // const response = await BatchGenerateDescription({
-    //   server: server as string,
-    //   shop: shop as string,
-    //   language: language,
-    //   productIds: selectedResources,
-    //   pageType: "product",
-    //   contentType: contentType,
-    //   languageStyle: languageStyle,
-    //   brandStyle: brandStyle,
-    //   templateId: Number(template),
-    //   templateType: false,
-    //   model: model,
-    //   seoKeywords: seoKeyword,
-    //   brandWord: brand,
-    //   brandSlogan: brandSlogan,
-    // });
-    // if (response.success) {
-    //   progressDataUpdate();
-    //   shopify.toast.show("Batch generation started");
-    // } else {
-    //   shopify.toast.show("Batch generation failed");
-    // }
-    generateFetcher.submit(
-      {
-        batchGenerationData: JSON.stringify({
-          language: language,
-          contentType: contentType,
-          languageStyle: languageStyle,
-          brandStyle: brandStyle,
-          template: template,
-          model: model,
-          seoKeywords: seoKeyword,
-          brandWord: brand,
-          brandSlogan: brandSlogan,
-          productIds: selectedResources,
-        }),
-      },
-      { method: "POST" },
-    );
-  }, [
-    selectedResources,
-    language,
-    contentType,
-    languageStyle,
-    brandStyle,
-    template,
-    model,
-    seoKeyword,
-    brand,
-    brandSlogan,
-  ]);
-
   const rowMarkup = data.map(
-    ({ id, productTitle, productImageUrl, status, updateTime }, index) => (
+    ({ id, pageType, contentType, generateContent }, index) => (
       <IndexTable.Row
         id={id}
         key={id}
@@ -600,223 +502,150 @@ const Index = () => {
         onClick={() => {}}
       >
         <IndexTable.Cell>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              // overflow: "hidden",
-              // textOverflow: "ellipsis", // 添加省略号
-              // wordBreak: "break-all",
-            }}
-          >
-            <div
-              style={{
-                width: "40px",
-                whiteSpace: "normal",
-              }}
-            >
-              <Thumbnail
-                source={productImageUrl || "/img_default-min.webp"}
-                alt={productTitle}
-                size="small"
-              />
-            </div>
-            <div
-              style={{
-                minWidth: "400px",
-                whiteSpace: "normal",
-              }}
-            >
-              <Text variant="bodyMd" fontWeight="bold" as="span">
-                {productTitle}
-              </Text>
-            </div>
-          </div>
+          <Text variant="bodyMd" as="span">
+            {pageType} {contentType}
+          </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
-          {status === "ACTIVE" ? (
-            <Badge tone="success">Active</Badge>
-          ) : status === "DRAFT" ? (
-            <Badge tone="info">Draft</Badge>
-          ) : (
-            <Badge tone="critical">Archived</Badge>
-          )}
+          <Box maxWidth={"1500px"}>
+            <ReactQuill
+              value={updateValue}
+              onChange={(value) => {
+                setUpdateValue(value);
+              }}
+              style={{ height: "150px", marginBlockEnd: 50, width: "100%" }}
+            />
+          </Box>
         </IndexTable.Cell>
-        <IndexTable.Cell>{updateTime}</IndexTable.Cell>
         <IndexTable.Cell>
-          <InlineStack gap="400" wrap={false} direction="row">
+          <BlockStack gap="400" align="end">
             <Button
+              loading={publishFetcher.state === "submitting" ? true : undefined}
               variant="primary"
-              onClick={() =>
-                navigate(`/app`, {
-                  state: {
-                    productId: id,
-                  },
-                })
+              onClick={() => handlePublish(id)}
+              disabled={
+                removeHtmlTags(updateValue) ===
+                  removeHtmlTags(generateContent) ||
+                !removeHtmlTags(updateValue)
               }
             >
-              Create content
+              Publish Content
             </Button>
-            {/* <Button variant="tertiary" onClick={() => setOpen(true)}>
-              Edit
-            </Button> */}
-          </InlineStack>
+            <Button variant="primary" onClick={() => setOpen(true)}>
+              ReGenerate
+            </Button>
+          </BlockStack>
         </IndexTable.Cell>
       </IndexTable.Row>
     ),
   );
 
-  const promotedBulkActions = [
-    {
-      content: "Batch Generation",
-      onAction: () => setOpen(true),
-    },
-  ];
-
   return (
     <Page
-      title="Batch Generation"
+      title="Result Management"
       fullWidth
-      // subtitle="Generate multiple products at once"
+      backAction={{
+        content: "Back",
+        onAction: () => {
+          navigate("/app/batchGeneration");
+        },
+      }}
+      // primaryAction={{
+      //   content: " Publish",
+      //   onAction: () => {},
+      // }}
     >
-      <Layout>
-        <Layout.Section>
-          {progress ? (
-            <DetailProgress
-              total={progress.allCount}
-              unfinished={progress.unfinishedCount}
-              moduleName={progress.taskModel}
-              status={progress.taskStatus}
-              progress={
-                ((progress.allCount - progress.unfinishedCount) /
-                  progress.allCount) *
-                100
-              }
-            />
-          ) : (
-            <CardSkeleton height="100px" />
-          )}
-        </Layout.Section>
-        <Layout.Section>
-          <Card padding={{ xs: "0", sm: "0", md: "0", lg: "0" }}>
-            <IndexFilters
-              // sortOptions={sortOptions}
-              // sortSelected={sortSelected}
-              queryValue={queryValue}
-              // queryPlaceholder="Searching in all"
-              onQueryChange={handleFiltersQueryChange}
-              onQueryClear={() => setQueryValue("")}
-              // onSort={setSortSelected}
-              // primaryAction={primaryAction}
-              cancelAction={{
-                onAction: () => {
-                  setQueryValue("");
-                },
-                disabled: false,
-                loading: false,
+      <Box>
+        {loading ? (
+          <BlockStack
+            gap="200"
+            align="center"
+            inlineAlign="center"
+            reverseOrder
+          >
+            <Spinner />
+          </BlockStack>
+        ) : (
+          <InlineStack gap="400" direction="row" wrap={false}>
+            <SideMenu
+              isMobile={isMobile}
+              menuItems={menuItems}
+              onClick={(item) => {
+                setActiveItem(item);
               }}
-              tabs={tabs}
-              selected={selected}
-              onSelect={(e) => handleSelectedStatusChange(e)}
-              canCreateNewView={false}
-              filters={[]}
-              // appliedFilters={appliedFilters}
-              onClearAll={() => {}}
-              mode={mode}
-              setMode={setMode}
+              activeItem={activeItem}
+              hasNext={true}
+              hasPrevious={true}
             />
-            <IndexTable
-              // condensed={useBreakpoints().smDown}
-              // resourceName={resourceName}
-              loading={fetcher.state === "submitting"}
-              itemCount={data.length}
-              selectedItemsCount={
-                data.every((item) => selectedResources.includes(item.id))
-                  ? "All"
-                  : selectedResources.length
-              }
-              // onSelectionChange={(
-              //   selectionType: SelectionType,
-              //   toggleType: boolean,
-              //   selection?: string | [number, number],
-              //   position?: number,
-              // ) => {
-              //   console.log(selectionType, toggleType, selection, position);
-              //   if (
-              //     ((selectionType === "page" &&
-              //       selectedResources.length +
-              //         data.filter((item) => selectedResources.includes(item.id))
-              //           .length >
-              //         20) ||
-              //       (selectionType === "single" &&
-              //         selectedResources.length + 1 > 20) ||
-              //       (selectionType === "multi" &&
-              //         selectedResources.length + (selection?.length || 1) >
-              //           20)) &&
-              //     toggleType == true
-              //   ) {
-              //     shopify.toast.show("You can only select up to 20 products");
-              //   } else {
-              //     handleSelectionChange(
-              //       selectionType,
-              //       toggleType,
-              //       selection,
-              //       position,
-              //     );
-              //   }
-              // }}
-              onSelectionChange={handleSelectionChange}
-              headings={[
-                { title: "Product title" },
-                { title: "Status" },
-                { title: "Update time" },
-                { title: "Action" },
-              ]}
-              promotedBulkActions={promotedBulkActions}
-              pagination={{
-                hasNext: pagination.hasNextPage,
-                onNext: handleNextPage,
-                hasPrevious: pagination.hasPreviousPage,
-                onPrevious: handlePreviousPage,
-              }}
-            >
-              {rowMarkup}
-            </IndexTable>
-          </Card>
-        </Layout.Section>
-      </Layout>
+            <Box width={"100%"} paddingInlineStart={"500"}>
+              <Box width={"100%"} paddingBlockEnd={"500"}>
+                <InlineStack
+                  align="space-between"
+                  blockAlign="center"
+                  direction="row"
+                  wrap={false}
+                >
+                  <Text variant="headingMd" as="h1">
+                    {menuItems.find((item) => item.id === activeItem)?.title}
+                  </Text>
+                  {/* <Select
+                    label=""
+                    options={[
+                      { label: "English", value: "English" },
+                      { label: "Chinese", value: "Chinese" },
+                      { label: "French", value: "French" },
+                      { label: "German", value: "German" },
+                      { label: "Italian", value: "Italian" },
+                      { label: "Spanish", value: "Spanish" },
+                      { label: "Portuguese", value: "Portuguese" },
+                      { label: "Russian", value: "Russian" },
+                      { label: "Arabic", value: "Arabic" },
+                    ]}
+                    onChange={(value) => {
+                      setSelectedLanguage(value);
+                    }}
+                    value={selectedLanguage}
+                  /> */}
+                </InlineStack>
+              </Box>
+              <IndexTable
+                // condensed={useBreakpoints().smDown}
+                // resourceName={resourceName}
+                loading={tableLoading}
+                itemCount={data.length}
+                selectable={false}
+                headings={[
+                  { title: "Module" },
+                  { title: "Generated Content" },
+                  { title: "Action", alignment: "end" },
+                ]}
+              >
+                {rowMarkup}
+              </IndexTable>
+            </Box>
+          </InlineStack>
+        )}
+      </Box>
       <Modal open={open} variant="large" onHide={() => setOpen(false)}>
-        <TitleBar
-          title={`Creating ${selectedResources.length} products in batches`}
-        >
+        <TitleBar title={"ReGenerating"}>
           <button
             variant="primary"
             onClick={handleGenerate}
-            loading={generateFetcher.state === "submitting" ? "" : undefined}
+            loading={isGenerating ? "true" : undefined}
           >
             Create
           </button>
-          <button onClick={() => setOpen(false)}>Cancel</button>
+          <button
+            onClick={() => {
+              setIsGenerating(false);
+              setOpen(false);
+            }}
+          >
+            Cancel
+          </button>
         </TitleBar>
         <Box padding={{ xs: "100", sm: "100", md: "400", lg: "400" }}>
           <BlockStack gap="400">
-            <Select
-              label="Content type"
-              options={[
-                { label: "Description", value: "Description" },
-                {
-                  label: "SEO description",
-                  value: "SEODescription",
-                },
-              ]}
-              value={contentType}
-              onChange={(value) =>
-                setContentType(value as "Description" | "SEODescription")
-              }
-            />
-
-            <Divider borderColor="border" />
             <BlockStack gap="200">
               <Text variant="bodyLg" as="p">
                 AI Generation Settings
@@ -854,12 +683,12 @@ const Index = () => {
               label="Seo Keywords"
               value={seoKeyword}
               placeholder="Click the 'Enter' to add SEO keywords"
-              disabled={seoKeywordTags.length >= 3}
+              // disabled={seoKeywordTags.length >= 3}
               onChange={(value) => {
                 setSeoKeyword(value);
               }}
               autoComplete="off"
-              verticalContent={seoKeywordTagsMarkup}
+              // verticalContent={seoKeywordTagsMarkup}
               onFocus={() => setFocusSeoKeywordInput(true)}
               onBlur={() => setFocusSeoKeywordInput(false)}
             />

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import type { LoaderFunctionArgs } from "@remix-run/node";
 import { useFetcher, useLoaderData, useLocation } from "@remix-run/react";
 import {
   Page,
@@ -15,35 +15,21 @@ import {
   Icon,
   TextField,
   ButtonGroup,
-  Popover,
-  ActionList,
   Box,
   IconProps,
   ThumbnailProps,
   AvatarProps,
   Thumbnail,
   SkeletonBodyText,
-  Spinner,
   Divider,
   Tag,
 } from "@shopify/polaris";
-import {
-  SearchIcon,
-  MagicIcon,
-  ClockIcon,
-  WandIcon,
-  DeleteIcon,
-  ThumbsDownIcon,
-  ThumbsUpIcon,
-  ClipboardIcon,
-} from "@shopify/polaris-icons";
+import { SearchIcon, MagicIcon, DeleteIcon } from "@shopify/polaris-icons";
 import dynamic from "next/dist/shared/lib/dynamic";
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 import "react-quill/dist/quill.snow.css";
 import styles from "../styles/styles.module.css";
 import { authenticate } from "app/shopify.server";
-import axios from "axios";
-import { filterAndMapTemplates } from "../app.template";
 import { GenerateDescription, GetTemplateByShopName } from "app/api/JavaServer";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -466,7 +452,12 @@ const Index = () => {
             id: item.id,
             label: item.title,
             value: item.id,
-            media: <Thumbnail source={item.image} alt={item.title} />,
+            media: (
+              <Thumbnail
+                source={item.image || "/img_default-min.webp"}
+                alt={item.title}
+              />
+            ),
           })),
         ]);
         setWillLoadMoreResults(fetcher.data!.response.hasNextPage);
@@ -477,53 +468,61 @@ const Index = () => {
 
   useEffect(() => {
     if (productInfoFetcher.data) {
-      const selectedProduct = {
-        id: productInfoFetcher.data.response.id,
-        label: productInfoFetcher.data.response.title,
-        value: productInfoFetcher.data.response.id,
-        media: (
-          <Thumbnail
-            source={
-              productInfoFetcher.data.response.media.edges[0]?.node?.preview
-                ?.image?.url
-            }
-            alt={productInfoFetcher.data.response.title}
-          />
-        ),
-      };
-      setSelectedProductItem(
-        <Box padding="400" background="bg-surface-secondary" borderRadius="200">
-          <InlineStack
-            gap="400"
-            align="space-between"
-            blockAlign="center"
-            direction="row"
-            wrap={false}
+      if (productInfoFetcher.data.success) {
+        const selectedProduct = {
+          id: productInfoFetcher.data.response.id,
+          label: productInfoFetcher.data.response.title,
+          value: productInfoFetcher.data.response.id,
+          media: (
+            <Thumbnail
+              source={
+                productInfoFetcher.data.response.media.edges[0]?.node?.preview
+                  ?.image?.url
+              }
+              alt={productInfoFetcher.data.response.title}
+            />
+          ),
+        };
+        setSelectedProductItem(
+          <Box
+            padding="400"
+            background="bg-surface-secondary"
+            borderRadius="200"
           >
             <InlineStack
               gap="400"
-              align="center"
+              align="space-between"
               blockAlign="center"
               direction="row"
               wrap={false}
             >
-              {/* <Icon source={SearchIcon} tone="base" /> */}
-              {selectedProduct?.media}
-              <Text as="p" variant="bodyMd">
-                {selectedProduct?.label}
-              </Text>
+              <InlineStack
+                gap="400"
+                align="center"
+                blockAlign="center"
+                direction="row"
+                wrap={false}
+              >
+                {/* <Icon source={SearchIcon} tone="base" /> */}
+                {selectedProduct?.media}
+                <Text as="p" variant="bodyMd">
+                  {selectedProduct?.label}
+                </Text>
+              </InlineStack>
+              <Button
+                icon={DeleteIcon}
+                variant="tertiary"
+                onClick={() => {
+                  setSelectedOptions([]);
+                  setSelectedProductItem(null);
+                }}
+              />
             </InlineStack>
-            <Button
-              icon={DeleteIcon}
-              variant="tertiary"
-              onClick={() => {
-                setSelectedOptions([]);
-                setSelectedProductItem(null);
-              }}
-            />
-          </InlineStack>
-        </Box>,
-      );
+          </Box>,
+        );
+      } else {
+        shopify.toast.show("Failed to get product info");
+      }
     }
   }, [productInfoFetcher.data]);
 

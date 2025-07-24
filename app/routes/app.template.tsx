@@ -18,7 +18,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import TemplateCard from "app/components/templateCard";
 import { Modal, TitleBar } from "@shopify/app-bridge-react";
 import { useLoaderData, useNavigate } from "@remix-run/react";
-import { GetAllTemplateData, GetTemplateByShopName } from "app/api/JavaServer";
+import {
+  AddOfficialOrUserTemplate,
+  DeleteUserTemplate,
+  GetAllTemplateData,
+  GetTemplateByShopName,
+} from "app/api/JavaServer";
 import CardSkeleton from "app/components/cardSkeleton";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -48,7 +53,7 @@ const Index = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCardLoading, setIsCardLoading] = useState(true);
-  const [addButtonLoading, setAddButtonLoading] = useState<string[]>([]);
+  const [buttonLoading, setButtonLoading] = useState<number[]>([]);
   // const filterTemplates = useMemo(() => {
   //   if (!templates) return [];
   //   const list = templates[mainSelected]?.[descriptionSelected] || [];
@@ -104,6 +109,44 @@ const Index = () => {
     templateTypeSelected,
   ]);
 
+  const handleAdd = async ({ id }: { id: number }) => {
+    setButtonLoading([...buttonLoading, id]);
+    const response = await AddOfficialOrUserTemplate({
+      server: server as string,
+      shop: shop as string,
+      templateId: id,
+      templateType: false,
+    });
+    if (response.success) {
+    }
+    setButtonLoading(buttonLoading.filter((id) => id !== id));
+  };
+
+  const handleDelete = async ({ id }: { id: number }) => {
+    setButtonLoading([...buttonLoading, id]);
+    const response = await DeleteUserTemplate({
+      server: server as string,
+      shop: shop as string,
+      id: id,
+      templateClass: false,
+    });
+    if (response.success) {
+      shopify.toast.show("Template deleted successfully");
+      setTemplates(
+        templates.map((item: any) => {
+          if (item.id == id) {
+            return {
+              ...item,
+              isUserUsed: false,
+            };
+          }
+          return item;
+        }),
+      );
+    }
+    setButtonLoading(buttonLoading.filter((id) => id !== id));
+  };
+
   const togglePopoverOneActive = (id: string) => () => {
     setPopoverOneActive((activeId) => (activeId !== id ? id : null));
   };
@@ -149,11 +192,11 @@ const Index = () => {
       accessibilityLabel: "System",
       panelID: "system-templates",
     },
-    {
-      id: "custom-templates",
-      content: "Custom",
-      panelID: "custom-templates",
-    },
+    // {
+    //   id: "custom-templates",
+    //   content: "Custom",
+    //   panelID: "custom-templates",
+    // },
   ];
 
   const secondaryTabs = [
@@ -579,9 +622,14 @@ const Index = () => {
                     columnSpan={{ xs: 6, sm: 3, md: 3, lg: 4, xl: 4 }}
                   >
                     <TemplateCard
+                      id={template.id}
                       title={template.templateTitle}
                       description={template.templateDescription}
                       content={template.templateData}
+                      loading={buttonLoading.includes(template.id)}
+                      added={template.isUserUsed}
+                      handleDelete={() => handleDelete({ id: template.id })}
+                      handleAdd={() => handleAdd({ id: template.id })}
                       onClick={() => handlePreview(template)}
                     />
                   </Grid.Cell>

@@ -1,18 +1,29 @@
 import { Box, Button, ButtonGroup, InlineStack, Text } from "@shopify/polaris";
 import styles from "./styles.module.css";
+import { useState } from "react";
 
 interface TemplateCardProps {
+  id: string;
   title: string;
   description: string;
   content: string;
+  loading: boolean;
+  added: boolean;
   onClick: () => void;
+  handleAdd: () => void;
+  handleDelete: () => void;
 }
 
 const TemplateCard = ({
+  id,
   title,
   description,
   content,
+  loading,
+  added,
   onClick,
+  handleAdd,
+  handleDelete,
 }: TemplateCardProps) => {
   return (
     <Box
@@ -39,7 +50,16 @@ const TemplateCard = ({
             <InlineStack align="space-between" wrap={false} direction="row">
               {/* <ButtonGroup> */}
               <Button onClick={onClick}>Preview</Button>
-              <Button onClick={onClick}>Add</Button>
+              {!added && (
+                <Button onClick={handleAdd} loading={loading}>
+                  Add
+                </Button>
+              )}
+              {added && (
+                <Button variant="primary" tone="critical" onClick={handleDelete} loading={loading}>
+                  Delete
+                </Button>
+              )}
               {/* </ButtonGroup> */}
             </InlineStack>
           </Box>
