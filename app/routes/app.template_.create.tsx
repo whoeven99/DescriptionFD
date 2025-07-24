@@ -380,7 +380,7 @@ const Index = () => {
             </SaveBar>
           </Card>
         </Layout.Section>
-        <Layout.Section>
+        {/* <Layout.Section>
           <Card>
             <BlockStack gap="400">
               <Grid>
@@ -569,7 +569,7 @@ const Index = () => {
               </Grid>
             </BlockStack>
           </Card>
-        </Layout.Section>
+        </Layout.Section> */}
       </Layout>
     </Page>
   );

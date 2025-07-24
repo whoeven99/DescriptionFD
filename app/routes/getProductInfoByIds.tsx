@@ -5,32 +5,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   const { shop } = session;
   const formData = await request.formData();
-  const productId = formData.get("productId");
+  const productIds = formData.get("productIds");
+  const productIdsArray = productIds?.toString()?.split(",");
+  const query = productIdsArray
+    ?.map((id) => `id:${id.split("gid://shopify/Product/")[1]}`)
+    .join(" OR ");
   try {
     const response = await admin.graphql(
       `#graphql
-          query product($id: ID!) {
-            product(id: $id) {
-                id
-                title
-                status
-                media(first: 1) {
-                edges {
-                    node {
-                    preview {
-                        image {
-                        id
-                        url
-                        }
-                    }
-                    }
-                }
+          query products($query: String!) {
+            products(query: $query, first: 20) {
+                nodes {
+                    id
+                    title
                 }
             }
           }`,
       {
         variables: {
-          id: productId,
+          query: query,
         },
       },
     );
@@ -39,7 +32,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       success: true,
       errorCode: null,
       errorMessage: null,
-      response: responseJson!.data!.product,
+      response: responseJson!.data!.products.nodes,
     };
   } catch (error: any) {
     console.error(`${shop} getProductInfoById error`);
