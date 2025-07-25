@@ -380,6 +380,7 @@ const Index = () => {
 
   useEffect(() => {
     if (location.state?.productId) {
+      setSelectedOptions([location.state?.productId]);
       productInfoFetcher.submit(
         { productId: location.state?.productId },
         { method: "POST", action: "/getProductInfoById" },

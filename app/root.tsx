@@ -15,6 +15,10 @@ export default function App() {
       <Outlet />
       <ScrollRestoration />
       <Scripts />
+      <script
+        src="//code.tidio.co/inl4rrmds8vvbldv1k6gyc2nzxongl3p.js"
+        async
+      ></script>
     </>
   );
 }

@@ -9,6 +9,7 @@ interface TemplateCardProps {
   content: string;
   loading: boolean;
   added: boolean;
+  isSystem: boolean;
   onClick: () => void;
   handleAdd: () => void;
   handleDelete: () => void;
@@ -21,10 +22,13 @@ const TemplateCard = ({
   content,
   loading,
   added,
+  isSystem,
   onClick,
   handleAdd,
   handleDelete,
 }: TemplateCardProps) => {
+  console.log(isSystem);
+
   return (
     <Box
       borderColor="border"
@@ -48,19 +52,49 @@ const TemplateCard = ({
           </Text>
           <Box width="100%">
             <InlineStack align="space-between" wrap={false} direction="row">
-              {/* <ButtonGroup> */}
-              <Button onClick={onClick}>Preview</Button>
-              {!added && (
-                <Button onClick={handleAdd} loading={loading}>
-                  Add
-                </Button>
+              {isSystem ? (
+                <>
+                  <Button onClick={onClick}>Preview</Button>
+                  {added ? (
+                    <Button
+                      variant="primary"
+                      tone="critical"
+                      onClick={handleDelete}
+                      loading={loading}
+                      disabled={true}
+                    >
+                      Added
+                    </Button>
+                  ) : (
+                    <Button onClick={handleAdd} loading={loading}>
+                      Add
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button onClick={onClick}>Preview</Button>
+                  {isSystem ? (
+                    <Button
+                      variant="primary"
+                      tone="critical"
+                      onClick={handleDelete}
+                      loading={loading}
+                    >
+                      Delete
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      tone="critical"
+                      onClick={handleDelete}
+                      loading={loading}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                </>
               )}
-              {added && (
-                <Button variant="primary" tone="critical" onClick={handleDelete} loading={loading}>
-                  Delete
-                </Button>
-              )}
-              {/* </ButtonGroup> */}
             </InlineStack>
           </Box>
         </div>

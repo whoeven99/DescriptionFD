@@ -332,6 +332,7 @@ const Index = () => {
 
   const fetcher = useFetcher<any>();
   const generateFetcher = useFetcher<any>();
+  const stopFetcher = useFetcher<any>();
 
   useEffect(() => {
     fetcher.submit(
@@ -468,6 +469,25 @@ const Index = () => {
       }
     }
   }, [generateFetcher.data]);
+
+  useEffect(() => {
+    if (stopFetcher.data?.success) {
+      setProgress({
+        ...progress,
+        taskStatus: 0,
+      });
+    }
+  }, [stopFetcher.data]);
+
+  const handleStop = () => {
+    stopFetcher.submit(
+      {},
+      {
+        method: "POST",
+        action: "/stopBatchGenerateDescription",
+      },
+    );
+  };
 
   const handleNextPage = () => {
     fetcher.submit(
