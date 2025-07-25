@@ -422,11 +422,9 @@ const Index = () => {
         pageType: pageType,
         contentType: contentType,
       });
-
-      console.log("response", response);
-
       // if (response.success) {
       setTemplates(response);
+      setTemplate(response[0].id.toString());
       //   setTemplate(response.response[0].id.toString());
       // } else {
       //   setTemplates(null);
