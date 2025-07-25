@@ -48,7 +48,8 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
     <div>
       <Text as="h2">Creating {moduleName} module: </Text>
       <Text as="h2">
-        Completed: {total - unfinished}, pending: {unfinished}
+        Completed: {total - unfinished < 0 ? 0 : total - unfinished}, pending:{" "}
+        {unfinished}
       </Text>
     </div>
   );
@@ -56,7 +57,10 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
   const finishedDoc = (
     <div>
       <Text as="h2">{moduleName} creation task has been completed</Text>
-      <Text as="h2">Completed: {total - unfinished}</Text>
+      <Text as="h2">
+        Completed: {total - unfinished < 0 ? 0 : total - unfinished}, pending:{" "}
+        {unfinished}
+      </Text>
     </div>
   );
 
@@ -64,7 +68,8 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
     <div>
       <Text as="h2">Abnormal error, stopped creating {moduleName} module</Text>
       <Text as="h2">
-        Completed: {total - unfinished}, pending: {unfinished}
+        Completed: {total - unfinished < 0 ? 0 : total - unfinished}, pending:{" "}
+        {unfinished}
       </Text>
     </div>
   );
@@ -75,7 +80,8 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
         Insufficient credit, stopped creating {moduleName} module
       </Text>
       <Text as="h2">
-        Completed: {total - unfinished}, pending: {unfinished}
+        Completed: {total - unfinished < 0 ? 0 : total - unfinished}, pending:{" "}
+        {unfinished}
       </Text>
     </div>
   );
@@ -101,7 +107,11 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
                 {status === 4 && failedDoc}
                 <Text as="h2">{""}</Text>
                 <div style={{ width: "100%" }}>
-                  <ProgressBar progress={progress} tone="primary" size="small" />
+                  <ProgressBar
+                    progress={progress < 0 ? 0 : progress}
+                    tone="primary"
+                    size="small"
+                  />
                 </div>
               </BlockStack>
             </Grid.Cell>
