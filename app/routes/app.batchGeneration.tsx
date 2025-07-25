@@ -96,7 +96,6 @@ const Index = () => {
   const [selected, setSelected] = useState(0);
   const [queryValue, setQueryValue] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
-  const [updateTime, setUpdateTime] = useState<string[]>([]);
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
     useIndexResourceState(data);
   const { mode, setMode } = useSetIndexFiltersMode();
@@ -389,14 +388,14 @@ const Index = () => {
   //   };
   // }, [seoKeyword, focusSeoKeywordInput]);
 
-  useEffect(() => {
-    setData(
-      data.map((item: any) => ({
-        ...item,
-        updateTime: updateTime[item.id] || "--",
-      })),
-    );
-  }, [updateTime]);
+  // useEffect(() => {
+  //   setData(
+  //     data.map((item: any) => ({
+  //       ...item,
+  //       updateTime: updateTime[item.productId] || "--",
+  //     })),
+  //   );
+  // }, [updateTime]);
 
   useEffect(() => {
     setTemplate("");
@@ -409,12 +408,7 @@ const Index = () => {
         contentType: contentType,
       });
 
-      if (response.success) {
-        setTemplates(response.response);
-        setTemplate(response.response[0].id.toString());
-      } else {
-        setTemplates([]);
-      }
+      setTemplates(response);
     };
     fetchTemplates();
   }, [contentType]);
@@ -443,9 +437,16 @@ const Index = () => {
           listId: listId,
         });
         if (response.response !== null) {
-          setUpdateTime(response.response.map((item: any) => item.updateTime));
+          setData(
+            data.map((dataItem: any) => ({
+              ...dataItem,
+              updateTime:
+                response.response.find(
+                  (item: any) => item.productId === dataItem.id,
+                )?.updateTime || null,
+            })),
+          );
         } else {
-          setUpdateTime([]);
         }
       };
 
@@ -663,7 +664,7 @@ const Index = () => {
             <Badge tone="critical">Archived</Badge>
           )}
         </IndexTable.Cell>
-        <IndexTable.Cell>{updateTime}</IndexTable.Cell>
+        <IndexTable.Cell>{formatDateTime(updateTime)}</IndexTable.Cell>
         <IndexTable.Cell>
           <InlineStack gap="400" wrap={false} direction="row">
             <Button
@@ -749,7 +750,7 @@ const Index = () => {
             <IndexTable
               // condensed={useBreakpoints().smDown}
               // resourceName={resourceName}
-              loading={fetcher.state === "submitting"}
+              // loading={fetcher.state === "submitting"}
               itemCount={data.length}
               selectedItemsCount={
                 data.every((item) => selectedResources.includes(item.id))
@@ -1363,6 +1364,19 @@ const Index = () => {
       </Modal>
     </Page>
   );
+};
+
+export const formatDateTime = (dateString: string) => {
+  if (!dateString) return "--";
+  const date = new Date(dateString);
+  // 转为本地时间并格式化
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  const second = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 };
 
 export default Index;

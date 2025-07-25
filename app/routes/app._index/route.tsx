@@ -423,12 +423,14 @@ const Index = () => {
         contentType: contentType,
       });
 
-      if (response.success) {
-        setTemplates(response.response);
-        setTemplate(response.response[0].id.toString());
-      } else {
-        setTemplates(null);
-      }
+      console.log("response", response);
+
+      // if (response.success) {
+      setTemplates(response);
+      //   setTemplate(response.response[0].id.toString());
+      // } else {
+      //   setTemplates(null);
+      // }
     };
     fetchTemplates();
   }, [pageType, contentType]);
