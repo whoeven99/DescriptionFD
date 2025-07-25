@@ -275,7 +275,7 @@ const Index = () => {
       brandWord: brand || "",
       brandSlogan: brandSlogan || "",
     });
-    if (response.success && isGenerating) {
+    if (response.success) {
       setIsGenerating(false);
       const html = handleSetValue(response.response.description);
       setUpdateValue(html);
