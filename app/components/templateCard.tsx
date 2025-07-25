@@ -1,4 +1,4 @@
-import { Box, Button, ButtonGroup, InlineStack, Text } from "@shopify/polaris";
+import { Badge, Box, Button, ButtonGroup, InlineStack, Text } from "@shopify/polaris";
 import styles from "./styles.module.css";
 import { useState } from "react";
 
@@ -10,6 +10,7 @@ interface TemplateCardProps {
   loading: boolean;
   added: boolean;
   isSystem: boolean;
+  type: string;
   onClick: () => void;
   handleAdd: () => void;
   handleDelete: () => void;
@@ -23,12 +24,11 @@ const TemplateCard = ({
   loading,
   added,
   isSystem,
+  type,
   onClick,
   handleAdd,
   handleDelete,
 }: TemplateCardProps) => {
-  console.log(isSystem);
-
   return (
     <Box
       borderColor="border"
@@ -44,6 +44,9 @@ const TemplateCard = ({
           </Text>
         </div>
         <div className={styles.Ciwi_template_card_content_name}>
+          <Badge>
+            {type}
+          </Badge>
           <Text as="h2" variant="headingMd">
             {title}
           </Text>
@@ -57,11 +60,9 @@ const TemplateCard = ({
                   <Button onClick={onClick}>Preview</Button>
                   {added ? (
                     <Button
-                      variant="primary"
-                      tone="critical"
+                      variant="monochromePlain"
                       onClick={handleDelete}
                       loading={loading}
-                      disabled={true}
                     >
                       Added
                     </Button>
@@ -76,7 +77,7 @@ const TemplateCard = ({
                   <Button onClick={onClick}>Preview</Button>
                   {isSystem ? (
                     <Button
-                      variant="primary"
+                      variant="monochromePlain"
                       tone="critical"
                       onClick={handleDelete}
                       loading={loading}
@@ -85,8 +86,7 @@ const TemplateCard = ({
                     </Button>
                   ) : (
                     <Button
-                      variant="primary"
-                      tone="critical"
+                      variant="monochromePlain"
                       onClick={handleDelete}
                       loading={loading}
                     >

@@ -123,7 +123,6 @@
 //     setInputValues((prevState: any) => {
 //       return { ...prevState, since: value };
 //     });
-//     console.log("handleStartInputValueChange, validDate", value);
 //     if (isValidDate(value)) {
 //       const newSince = parseYearMonthDayDateString(value);
 //       setActiveDateRange((prevState: any) => {

@@ -45,7 +45,7 @@ const Index = () => {
     "description" | "seo"
   >("description");
   const [templateTypeSelected, setTemplateTypeSelected] =
-    useState<string>("Beauty & Skincare");
+    useState<string | null>(null);
   const [previewModal, setPreviewModal] = useState<any>(null);
   const [popoverOneActive, setPopoverOneActive] = useState<string | null>(null);
   const [popoverTwoActive, setPopoverTwoActive] = useState<string | null>(null);
@@ -177,7 +177,7 @@ const Index = () => {
     setPopoverOneActive(null);
   };
 
-  const handleTemplateTypeChange = (value: string) => {
+  const handleTemplateTypeChange = (value: string | null) => {
     setTemplateTypeSelected(value);
     setPopoverTwoActive(null);
   };
@@ -279,7 +279,7 @@ const Index = () => {
                         onClick={togglePopoverOneActive("popover1")}
                         disclosure
                       >
-                        {templateTypeSelected}
+                        {templateTypeSelected || "All"}
                       </Button>
                     }
                     autofocusTarget="first-node"
@@ -288,6 +288,10 @@ const Index = () => {
                     <ActionList
                       actionRole="menuitem"
                       items={[
+                        {
+                          content: "All",
+                          onAction: () => handleTemplateTypeChange(null),
+                        },
                         {
                           content: "Beauty & Skincare",
                           onAction: () =>
@@ -468,7 +472,7 @@ const Index = () => {
                           onClick={togglePopoverOneActive("popover1")}
                           disclosure
                         >
-                          {templateTypeSelected}
+                          {templateTypeSelected || "All"}
                         </Button>
                       }
                       autofocusTarget="first-node"
@@ -648,6 +652,7 @@ const Index = () => {
                       content={template.templateData}
                       loading={buttonLoading.includes(template.id)}
                       added={template.isUserUsed}
+                      type={template.templateType}
                       isSystem={mainSelected == 0 ? true : false}
                       handleDelete={() => handleDelete({ id: template.id })}
                       handleAdd={() => handleAdd({ id: template.id })}

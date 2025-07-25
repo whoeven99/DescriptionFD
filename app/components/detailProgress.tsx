@@ -92,12 +92,16 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
           <Grid columns={{ sm: 3 }}>
             <Grid.Cell columnSpan={{ xs: 4, sm: 2, md: 2, lg: 10, xl: 10 }}>
               <BlockStack gap="200">
+                <Text as="h2" variant="headingMd">
+                  Task Progress
+                </Text>
                 {status === 1 && finishedDoc}
                 {status === 2 && pendingDoc}
                 {status === 3 && tokenExhaustedDoc}
                 {status === 4 && failedDoc}
+                <Text as="h2">{""}</Text>
                 <div style={{ width: "100%" }}>
-                  <ProgressBar progress={progress} />
+                  <ProgressBar progress={progress} tone="primary" size="small" />
                 </div>
               </BlockStack>
             </Grid.Cell>
@@ -120,7 +124,6 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
               >
                 {status === 1 && (
                   <Button
-                    variant="primary"
                     onClick={() => {
                       navigate("/app/resultManage");
                     }}
@@ -130,7 +133,6 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
                 )}
                 {status === 2 && (
                   <Button
-                    variant="primary"
                     onClick={handleStop}
                     loading={
                       stopFetcher.state === "submitting" ? true : undefined
@@ -144,7 +146,6 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
                   <Button
                     variant="primary"
                     onClick={() => {
-                      console.log("clicked");
                     }}
                   >
                     Purchase amount
@@ -152,7 +153,6 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
                   <Button
                     variant="primary"
                     onClick={() => {
-                      console.log("clicked");
                     }}
                   >
                     Continue to create
@@ -160,10 +160,7 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
                 </BlockStack>
               )} */}
                 {(status === 4 || status === 3) && (
-                  <Button
-                    variant="primary"
-                    onClick={handleContactSupport}
-                  >
+                  <Button onClick={handleContactSupport}>
                     Contact the Team
                   </Button>
                 )}
