@@ -482,6 +482,10 @@ const Index = () => {
                         actionRole="menuitem"
                         items={[
                           {
+                            content: "All",
+                            onAction: () => handleTemplateTypeChange(null),
+                          },
+                          {
                             content: "Beauty & Skincare",
                             onAction: () =>
                               handleTemplateTypeChange("Beauty & Skincare"),
