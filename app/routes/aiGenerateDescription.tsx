@@ -7,8 +7,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const pageType = formData.get("pageType");
     const contentType = formData.get("contentType");
 
-    console.log(pageType, contentType);
-
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     return {

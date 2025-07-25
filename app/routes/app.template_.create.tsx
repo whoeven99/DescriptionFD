@@ -158,7 +158,6 @@ const Index = () => {
 
   useEffect(() => {
     if (fetcher.data) {
-      console.log("fetcher.data: ", fetcher.data);
       if (fetcher.data.success) {
         setLoading(false);
         setOptions((prev) => [

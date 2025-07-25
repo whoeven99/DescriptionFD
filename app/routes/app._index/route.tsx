@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useLoaderData, useLocation } from "@remix-run/react";
+import { Link, useFetcher, useLoaderData, useLocation } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -423,12 +423,14 @@ const Index = () => {
         contentType: contentType,
       });
 
-      if (response.success) {
-        setTemplates(response.response);
-        setTemplate(response.response[0].id.toString());
-      } else {
-        setTemplates(null);
-      }
+      console.log("response", response);
+
+      // if (response.success) {
+      setTemplates(response);
+      //   setTemplate(response.response[0].id.toString());
+      // } else {
+      //   setTemplates(null);
+      // }
     };
     fetchTemplates();
   }, [pageType, contentType]);
@@ -770,145 +772,6 @@ const Index = () => {
     >
       <BlockStack gap="500">
         <Layout>
-          {/* <Layout.Section>
-            <div>
-              <Grid>
-                <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 8 }}>
-                  <Card>
-                    <BlockStack gap="200">
-                      <InlineStack gap="100">
-                        <Box>
-                          <Icon source={WandIcon} tone="base" />
-                        </Box>
-                        <Text as="h2" variant="headingMd">
-                          Generated content
-                        </Text>
-                      </InlineStack>
-                      <div className={styles.Ciwi_Analytics_Metrics}>
-                        <Grid
-                          columns={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}
-                          gap={{
-                            xs: "0",
-                            sm: "0",
-                            md: "0",
-                            lg: "0",
-                            xl: "0",
-                          }}
-                        >
-                          <Grid.Cell
-                            columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}
-                          >
-                            <div
-                              className={
-                                styles.Ciwi_Analytics_Metric +
-                                " " +
-                                styles.Ciwi_Analytics_Metrics_LeftTop
-                              }
-                            >
-                              <Text as="p" variant="bodyMd">
-                                Product description
-                              </Text>
-                              <Text as="p" variant="headingXl">
-                                {userCost.productCounter}
-                              </Text>
-                            </div>
-                          </Grid.Cell>
-                          <Grid.Cell
-                            columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}
-                          >
-                            <div
-                              className={
-                                styles.Ciwi_Analytics_Metric +
-                                " " +
-                                styles.Ciwi_Analytics_Metrics_RightTop
-                              }
-                            >
-                              <Text as="p" variant="bodyMd">
-                                Product SEO description
-                              </Text>
-                              <Text as="p" variant="headingXl">
-                                {userCost.productSeoCounter}
-                              </Text>
-                            </div>
-                          </Grid.Cell>
-                          <Grid.Cell
-                            columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}
-                          >
-                            <div
-                              className={
-                                styles.Ciwi_Analytics_Metric +
-                                " " +
-                                styles.Ciwi_Analytics_Metrics_LeftDown
-                              }
-                            >
-                              <Text as="p" variant="bodyMd">
-                                Collection description
-                              </Text>
-                              <Text as="p" variant="headingXl">
-                                {userCost.collectionCounter}
-                              </Text>
-                            </div>
-                          </Grid.Cell>
-                          <Grid.Cell
-                            columnSpan={{ xs: 3, sm: 3, md: 3, lg: 3, xl: 3 }}
-                          >
-                            <div
-                              className={
-                                styles.Ciwi_Analytics_Metric +
-                                " " +
-                                styles.Ciwi_Analytics_Metrics_RightDown
-                              }
-                            >
-                              <Text as="p" variant="bodyMd">
-                                Collection SEO description
-                              </Text>
-                              <Text as="p" variant="headingXl">
-                                {userCost.collectionSeoCounter}
-                              </Text>
-                            </div>
-                          </Grid.Cell>
-                        </Grid>
-                      </div>
-                    </BlockStack>
-                  </Card>
-                </Grid.Cell>
-                <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 4 }}>
-                  <Card background="bg-surface" padding="400">
-                    <BlockStack gap="200">
-                      <InlineStack gap="100">
-                        <Box>
-                          <Icon source={ClockIcon} tone="base" />
-                        </Box>
-                        <Text as="h2" variant="headingMd">
-                          Time saved
-                        </Text>
-                      </InlineStack>
-                      <div className={styles.Ciwi_Analytics_TimeSaved}>
-                        <InlineStack
-                          gap="050"
-                          blockAlign="end"
-                          direction="row"
-                          align="center"
-                        >
-                          <Text as="p" variant="heading2xl">
-                            {(userCost.productCounter +
-                              userCost.collectionCounter) *
-                              0.5 +
-                              (userCost.productSeoCounter +
-                                userCost.collectionSeoCounter) *
-                                0.3}
-                          </Text>
-                          <Text as="p" variant="bodyMd">
-                            hours
-                          </Text>
-                        </InlineStack>
-                      </div>
-                    </BlockStack>
-                  </Card>
-                </Grid.Cell>
-              </Grid>
-            </div>
-          </Layout.Section> */}
           <Layout.Section>
             <Card>
               <BlockStack gap="400">
@@ -916,11 +779,11 @@ const Index = () => {
                   <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4 }}>
                     <BlockStack gap="400">
                       <InlineStack gap="100">
-                        <Box>
+                        {/* <Box>
                           <Icon source={MagicIcon} tone="base" />
-                        </Box>
-                        <Text as="h2" variant="headingMd">
-                          Quick generator
+                        </Box> */}
+                        <Text as="p" variant="headingMd">
+                          Select Content
                         </Text>
                       </InlineStack>
                       <Select
@@ -988,7 +851,7 @@ const Index = () => {
                       )}
                       <Divider borderColor="border" />
                       <BlockStack gap="200">
-                        <Text variant="bodyLg" as="p">
+                        <Text variant="headingMd" as="p">
                           AI Generation Settings
                         </Text>
                         <Select
@@ -1020,8 +883,11 @@ const Index = () => {
                         />
                       </BlockStack>
                       <Divider borderColor="border" />
+                      <Text variant="headingMd" as="p">
+                        SEO Keywords
+                      </Text>
                       <TextField
-                        label="Seo Keywords"
+                        label=""
                         value={seoKeywords}
                         placeholder="Click the 'Enter' to add SEO keywords"
                         disabled={seoKeywordTags.length >= 3}
@@ -1035,7 +901,7 @@ const Index = () => {
                       />
                       <Divider borderColor="border" />
                       <BlockStack gap="200">
-                        <Text variant="bodyLg" as="p">
+                        <Text variant="headingMd" as="p">
                           Brand Settings
                         </Text>
                         <TextField
@@ -1056,6 +922,9 @@ const Index = () => {
                         />
                       </BlockStack>
                       <Divider borderColor="border" />
+                      <Text variant="headingMd" as="p">
+                        Language
+                      </Text>
                       {/*<TextField
                         label="Additional information"
                         value={additionalInformation}
@@ -1065,7 +934,7 @@ const Index = () => {
                         autoComplete="off"
                       /> */}
                       <Select
-                        label="Language"
+                        label=""
                         options={[
                           {
                             label: "English (United States)",
@@ -1540,15 +1409,19 @@ const Index = () => {
                             </Popover>
                           </ButtonGroup>
                         </div> */}
-                      <Button
-                        fullWidth
-                        variant="primary"
-                        icon={MagicIcon}
-                        onClick={handleGenerate}
-                        loading={isGenerating}
-                      >
-                        Generate
-                      </Button>
+                      <Box paddingBlockStart="500">
+                        <Button
+                          fullWidth
+                          variant="primary"
+                          icon={MagicIcon}
+                          onClick={handleGenerate}
+                          loading={isGenerating}
+                          size="large"
+                        >
+                          Generate
+                        </Button>
+                      </Box>
+
                       {/* </InlineStack> */}
                     </BlockStack>
                   </Grid.Cell>
@@ -1652,6 +1525,15 @@ const Index = () => {
                 </Grid>
               </BlockStack>
             </Card>
+          </Layout.Section>
+          <Layout.Section>
+            <BlockStack align="center" inlineAlign="center">
+              <Text variant="bodyLg" as="p">
+                Created by {/* <Link to="https://ciwi.ai" target="_blank"> */}
+                ciwi.ai
+                {/* </Link> */}
+              </Text>
+            </BlockStack>
           </Layout.Section>
         </Layout>
       </BlockStack>

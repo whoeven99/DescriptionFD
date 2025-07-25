@@ -96,14 +96,13 @@ const Index = () => {
   const [selected, setSelected] = useState(0);
   const [queryValue, setQueryValue] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
-  const [updateTime, setUpdateTime] = useState<string[]>([]);
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
     useIndexResourceState(data);
   const { mode, setMode } = useSetIndexFiltersMode();
 
-  const [contentType, setContentType] = useState<
-    "Description" | "SEODescription"
-  >("Description");
+  const [contentType, setContentType] = useState<"description" | "seo">(
+    "description",
+  );
 
   const [brandStyle, setBrandStyle] = useState<string>("");
   const [languageStyle, setLanguageStyle] = useState<string>("formal");
@@ -389,14 +388,14 @@ const Index = () => {
   //   };
   // }, [seoKeyword, focusSeoKeywordInput]);
 
-  useEffect(() => {
-    setData(
-      data.map((item: any) => ({
-        ...item,
-        updateTime: updateTime[item.id] || "--",
-      })),
-    );
-  }, [updateTime]);
+  // useEffect(() => {
+  //   setData(
+  //     data.map((item: any) => ({
+  //       ...item,
+  //       updateTime: updateTime[item.productId] || "--",
+  //     })),
+  //   );
+  // }, [updateTime]);
 
   useEffect(() => {
     setTemplate("");
@@ -409,12 +408,7 @@ const Index = () => {
         contentType: contentType,
       });
 
-      if (response.success) {
-        setTemplates(response.response);
-        setTemplate(response.response[0].id.toString());
-      } else {
-        setTemplates([]);
-      }
+      setTemplates(response);
     };
     fetchTemplates();
   }, [contentType]);
@@ -443,9 +437,16 @@ const Index = () => {
           listId: listId,
         });
         if (response.response !== null) {
-          setUpdateTime(response.response.map((item: any) => item.updateTime));
+          setData(
+            data.map((dataItem: any) => ({
+              ...dataItem,
+              updateTime:
+                response.response.find(
+                  (item: any) => item.productId === dataItem.id,
+                )?.updateTime || null,
+            })),
+          );
         } else {
-          setUpdateTime([]);
         }
       };
 
@@ -558,6 +559,17 @@ const Index = () => {
   }, []);
 
   const handleGenerate = useCallback(async () => {
+    let error = false;
+    if (selectedResources.length === 0) {
+      shopify.toast.show("Please select at least one product");
+      error = true;
+    }
+    if (template === "") {
+      shopify.toast.show("Please select a template");
+      error = true;
+    }
+    if (error) return;
+
     // const response = await BatchGenerateDescription({
     //   server: server as string,
     //   shop: shop as string,
@@ -644,7 +656,7 @@ const Index = () => {
             </div>
             <div
               style={{
-                minWidth: "400px",
+                minWidth: "calc(100% - 420px)",
                 whiteSpace: "normal",
               }}
             >
@@ -655,29 +667,48 @@ const Index = () => {
           </div>
         </IndexTable.Cell>
         <IndexTable.Cell>
-          {status === "ACTIVE" ? (
-            <Badge tone="success">Active</Badge>
-          ) : status === "DRAFT" ? (
-            <Badge tone="info">Draft</Badge>
-          ) : (
-            <Badge tone="critical">Archived</Badge>
-          )}
+          <div
+            style={{
+              width: "60px",
+            }}
+          >
+            {status === "ACTIVE" ? (
+              <Badge tone="success">Active</Badge>
+            ) : status === "DRAFT" ? (
+              <Badge tone="info">Draft</Badge>
+            ) : (
+              <Badge tone="critical">Archived</Badge>
+            )}
+          </div>
         </IndexTable.Cell>
-        <IndexTable.Cell>{updateTime}</IndexTable.Cell>
+        <IndexTable.Cell>
+          <div
+            style={{
+              width: "200px",
+            }}
+          >
+            {formatDateTime(updateTime)}
+          </div>
+        </IndexTable.Cell>
         <IndexTable.Cell>
           <InlineStack gap="400" wrap={false} direction="row">
-            <Button
-              variant="primary"
-              onClick={() =>
-                navigate(`/app`, {
-                  state: {
-                    productId: id,
-                  },
-                })
-              }
+            <div
+              style={{
+                maxWidth: "120px",
+              }}
             >
-              Create content
-            </Button>
+              <Button
+                onClick={() =>
+                  navigate(`/app`, {
+                    state: {
+                      productId: id,
+                    },
+                  })
+                }
+              >
+                Create content
+              </Button>
+            </div>
             {/* <Button variant="tertiary" onClick={() => setOpen(true)}>
               Edit
             </Button> */}
@@ -690,6 +721,7 @@ const Index = () => {
   const promotedBulkActions = [
     {
       content: "Batch Generation",
+      variant: "primary",
       onAction: () => setOpen(true),
     },
   ];
@@ -749,7 +781,7 @@ const Index = () => {
             <IndexTable
               // condensed={useBreakpoints().smDown}
               // resourceName={resourceName}
-              loading={fetcher.state === "submitting"}
+              // loading={fetcher.state === "submitting"}
               itemCount={data.length}
               selectedItemsCount={
                 data.every((item) => selectedResources.includes(item.id))
@@ -762,7 +794,6 @@ const Index = () => {
               //   selection?: string | [number, number],
               //   position?: number,
               // ) => {
-              //   console.log(selectionType, toggleType, selection, position);
               //   if (
               //     ((selectionType === "page" &&
               //       selectedResources.length +
@@ -790,7 +821,7 @@ const Index = () => {
               headings={[
                 { title: "Product title" },
                 { title: "Status" },
-                { title: "Update time" },
+                { title: "Last Updated (UTC)" },
                 { title: "Action" },
               ]}
               promotedBulkActions={promotedBulkActions}
@@ -824,15 +855,15 @@ const Index = () => {
             <Select
               label="Content type"
               options={[
-                { label: "Description", value: "Description" },
+                { label: "Description", value: "description" },
                 {
                   label: "SEO description",
-                  value: "SEODescription",
+                  value: "seo",
                 },
               ]}
               value={contentType}
               onChange={(value) =>
-                setContentType(value as "Description" | "SEODescription")
+                setContentType(value as "description" | "seo")
               }
             />
 
@@ -1363,6 +1394,19 @@ const Index = () => {
       </Modal>
     </Page>
   );
+};
+
+export const formatDateTime = (dateString: string) => {
+  if (!dateString) return "--";
+  const date = new Date(dateString);
+  // 转为本地时间并格式化
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  const second = String(date.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 };
 
 export default Index;

@@ -222,7 +222,7 @@ export const GetTemplateByShopName = async ({
   contentType: string;
 }) => {
   try {
-    let response: any = null;
+    let response: any = [];
     const res = await axios.post(
       `${server}/apg/template/getTemplateByShopName?shopName=${shop}`,
       // {
