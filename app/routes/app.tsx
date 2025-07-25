@@ -44,11 +44,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   );
   const data = await response.json();
   const graphqlData = data.data.shop;
-  const response1 = await axios.get(
-    `${process.env.SERVER_URL}/apg/userCounter/initUserCounter?shopName=${shopName}`,
-  );
-  const response2 = await axios.post(
-    `${process.env.SERVER_URL}/apg/users/insertOrUpdateApgUser?shopName=${shopName}`,
+  await axios.get(`${process.env.SERVER_URL}/apg/userCounter/initUserCounter?shopName=${shopName}`);
+  await axios.post(`${process.env.SERVER_URL}/apg/users/insertOrUpdateApgUser?shopName=${shopName}`,
     {
       shopName: shopName,
       accessToken: session?.accessToken,
@@ -57,8 +54,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       lastName: graphqlData.shopOwnerName.split(" ")[1],
     },
   );
-  console.log("response1: ", response1.data);
-  console.log("response2: ", response2.data);
   return null;
 };
 
@@ -78,6 +73,7 @@ export default function App() {
         <Link to="/app" rel="home">
           Home
         </Link>
+        <Link to="/app/batchGeneration">Batch Generation</Link>
         <Link to="/app/template">Template</Link>
       </NavMenu>
       <Outlet />

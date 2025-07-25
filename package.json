@@ -44,6 +44,7 @@
     "react-quill": "^2.0.0",
     "react-redux": "^9.2.0",
     "redux": "^5.0.1",
+    "remix-island": "^0.2.0",
     "vite-tsconfig-paths": "^5.0.1"
   },
   "devDependencies": {

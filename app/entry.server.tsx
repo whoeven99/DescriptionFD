@@ -1,5 +1,5 @@
 import { PassThrough } from "stream";
-import { renderToPipeableStream } from "react-dom/server";
+import { renderToPipeableStream, renderToString } from "react-dom/server";
 import { RemixServer } from "@remix-run/react";
 import {
   createReadableStreamFromReadable,
@@ -7,6 +7,8 @@ import {
 } from "@remix-run/node";
 import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
+import { renderHeadToString } from 'remix-island';
+import { Head } from './root'
 
 export const streamTimeout = 5000;
 
@@ -22,38 +24,25 @@ export default async function handleRequest(
     ? "onAllReady"
     : "onShellReady";
 
-  return new Promise((resolve, reject) => {
-    const { pipe, abort } = renderToPipeableStream(
+  function MainApp() {
+    return (
       <RemixServer
         context={remixContext}
         url={request.url}
-      />,
-      {
-        [callbackName]: () => {
-          const body = new PassThrough();
-          const stream = createReadableStreamFromReadable(body);
-
-          responseHeaders.set("Content-Type", "text/html");
-          resolve(
-            new Response(stream, {
-              headers: responseHeaders,
-              status: responseStatusCode,
-            })
-          );
-          pipe(body);
-        },
-        onShellError(error) {
-          reject(error);
-        },
-        onError(error) {
-          responseStatusCode = 500;
-          console.error(error);
-        },
-      }
+      />
     );
+  }
 
-    // Automatically timeout the React renderer after 6 seconds, which ensures
-    // React has enough time to flush down the rejected boundary contents
-    setTimeout(abort, streamTimeout + 1000);
+  let markup = renderToString(<MainApp />);
+
+  let head = renderHeadToString({ request, remixContext, Head })
+
+  const html = `<!DOCTYPE html>${head}<body><div id="root">${markup}</div></body></html>`;
+
+  responseHeaders.set("Content-Type", "text/html");
+
+  return new Response(html, {
+    status: responseStatusCode,
+    headers: responseHeaders,
   });
 }
