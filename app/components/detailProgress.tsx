@@ -162,9 +162,7 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
                 {(status === 4 || status === 3) && (
                   <Button
                     variant="primary"
-                    onClick={() => {
-                      console.log("clicked");
-                    }}
+                    onClick={handleContactSupport}
                   >
                     Contact the Team
                   </Button>
@@ -176,6 +174,21 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
       </Card>
     )
   );
+};
+
+export const handleContactSupport = () => {
+  // 声明 tidioChatApi 类型
+  interface Window {
+    tidioChatApi?: {
+      open: () => void;
+    };
+  }
+
+  if ((window as Window)?.tidioChatApi) {
+    (window as Window).tidioChatApi?.open();
+  } else {
+    console.warn("Tidio Chat API not loaded");
+  }
 };
 
 export default DetailProgress;
