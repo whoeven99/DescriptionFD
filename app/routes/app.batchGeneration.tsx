@@ -58,6 +58,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     formData.get("batchGenerationData") as string,
   );
 
+  console.log("batchGenerationData", batchGenerationData);
+  
+
   try {
     const response = await BatchGenerateDescription({
       shop: shop as string,
@@ -407,8 +410,9 @@ const Index = () => {
         pageType: "product",
         contentType: contentType,
       });
-
+      
       setTemplates(response);
+      setTemplate(response[0].id);
     };
     fetchTemplates();
   }, [contentType]);
