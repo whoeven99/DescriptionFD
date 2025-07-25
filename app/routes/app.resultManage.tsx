@@ -186,12 +186,8 @@ const Index = () => {
         contentType: data[0]?.contentType || "",
       });
 
-      if (response.success) {
-        setTemplates(response.response);
-        setTemplate(response.response[0].id.toString());
-      } else {
-        setTemplates([]);
-      }
+      setTemplates(response);
+      setTemplate(response[0].id.toString());
     };
     fetchTemplates();
   }, [data]);
