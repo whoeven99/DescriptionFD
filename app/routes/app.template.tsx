@@ -81,24 +81,38 @@ const Index = () => {
     setIsCardLoading(true);
     setTemplates([]);
     const fetchTemplates = async () => {
-      const response = await GetAllTemplateData({
-        server: server as string,
-        shop: shop as string,
-        pageType:
-          secondarySelected == 0
-            ? null
-            : secondarySelected == 1
-              ? "product"
-              : "collection",
-        contentType: descriptionSelected,
-        templateType: mainSelected ? null : templateTypeSelected,
-        templateClass: mainSelected ? true : false,
-      });
-      if (response.success) {
-        setTemplates(response.response);
+      let response: any = null;
+      if (mainSelected) {
+        const res = await GetTemplateByShopName({
+          server: server as string,
+          shop: shop as string,
+          pageType:
+            secondarySelected == 0
+              ? null
+              : secondarySelected == 1
+                ? "product"
+                : "collection",
+          contentType: descriptionSelected,
+        });
+        response = res;
       } else {
-        setTemplates(null);
+        const res = await GetAllTemplateData({
+          server: server as string,
+          shop: shop as string,
+          pageType:
+            secondarySelected == 0
+              ? null
+              : secondarySelected == 1
+                ? "product"
+                : "collection",
+          contentType: descriptionSelected,
+          templateType: mainSelected ? null : templateTypeSelected,
+          templateClass: false,
+        });
+        response = res?.response;
       }
+      console.log(response);
+      setTemplates(response);
       setIsCardLoading(false);
     };
     fetchTemplates();
@@ -118,6 +132,17 @@ const Index = () => {
       templateType: false,
     });
     if (response.success) {
+      setTemplates(
+        templates.map((item: any) => {
+          if (item.id == id) {
+            return {
+              ...item,
+              isUserUsed: true,
+            };
+          }
+          return item;
+        }),
+      );
     }
     setButtonLoading(buttonLoading.filter((id) => id !== id));
   };
@@ -133,15 +158,7 @@ const Index = () => {
     if (response.success) {
       shopify.toast.show("Template deleted successfully");
       setTemplates(
-        templates.map((item: any) => {
-          if (item.id == id) {
-            return {
-              ...item,
-              isUserUsed: false,
-            };
-          }
-          return item;
-        }),
+        templates.filter((item: any) => item.id !== id),
       );
     }
     setButtonLoading(buttonLoading.filter((id) => id !== id));
@@ -166,7 +183,10 @@ const Index = () => {
   };
 
   const handleMainTabChange = useCallback(
-    (selectedTabIndex: number) => setMainSelected(selectedTabIndex),
+    (selectedTabIndex: number) => {
+      setTemplates([]);
+      setMainSelected(selectedTabIndex);
+    },
     [],
   );
 
@@ -192,11 +212,11 @@ const Index = () => {
       accessibilityLabel: "System",
       panelID: "system-templates",
     },
-    // {
-    //   id: "custom-templates",
-    //   content: "Custom",
-    //   panelID: "custom-templates",
-    // },
+    {
+      id: "custom-templates",
+      content: "Custom",
+      panelID: "custom-templates",
+    },
   ];
 
   const secondaryTabs = [
@@ -628,6 +648,7 @@ const Index = () => {
                       content={template.templateData}
                       loading={buttonLoading.includes(template.id)}
                       added={template.isUserUsed}
+                      isSystem={mainSelected == 0 ? true : false}
                       handleDelete={() => handleDelete({ id: template.id })}
                       handleAdd={() => handleAdd({ id: template.id })}
                       onClick={() => handlePreview(template)}

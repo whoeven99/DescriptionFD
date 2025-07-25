@@ -149,6 +149,8 @@ export const BatchGenerateDescription = async ({
   brandSlogan?: string;
 }) => {
   try {
+    console.log(productIds);
+
     const response = await axios.put(
       `${process.env.SERVER_URL}/apg/userGeneratedTask/batchGenerateDescription?shopName=${shop}`,
       {
@@ -216,18 +218,54 @@ export const GetTemplateByShopName = async ({
 }: {
   server: string;
   shop: string;
-  pageType: string;
+  pageType: string | null;
   contentType: string;
 }) => {
   try {
-    const response = await axios.post(
+    let response: any = null;
+    const res = await axios.post(
       `${server}/apg/template/getTemplateByShopName?shopName=${shop}`,
-      {
-        templateModel: pageType,
-        templateSubtype: contentType,
-      },
+      // {
+      //   templateModel: pageType,
+      //   templateSubtype: contentType,
+      // },
     );
-    return response.data;
+    console.log(res.data);
+    if (res.data.success) {
+      if (pageType === null && contentType === "description") {
+        response = res.data.response.filter(
+          (item: any) => item.templateSubtype === "description",
+        );
+      } else if (pageType === null && contentType === "seo") {
+        response = res.data.response.filter(
+          (item: any) => item.templateSubtype === "seo",
+        );
+      } else if (pageType === "product" && contentType === "description") {
+        response = res.data.response.filter(
+          (item: any) =>
+            item.templateModel === "product" &&
+            item.templateSubtype === "description",
+        );
+      } else if (pageType === "collection" && contentType === "description") {
+        response = res.data.response.filter(
+          (item: any) =>
+            item.templateModel === "collection" &&
+            item.templateSubtype === "description",
+        );
+      } else if (pageType === "product" && contentType === "seo") {
+        response = res.data.response.filter(
+          (item: any) =>
+            item.templateModel === "product" && item.templateSubtype === "seo",
+        );
+      } else if (pageType === "collection" && contentType === "seo") {
+        response = res.data.response.filter(
+          (item: any) =>
+            item.templateModel === "collection" &&
+            item.templateSubtype === "seo",
+        );
+      }
+    }
+    return response;
   } catch (error) {
     console.log(error);
     return {
@@ -351,30 +389,17 @@ export const GetUserData = async ({
   }
 };
 
-export const testMethod2 = async ({
-  server,
-  shop,
-}: {
-  server: string;
-  shop: string;
-}) => {
+export const StopBatchGenerateDescription = async ({ shop }: { shop: string }) => {
   try {
-    // setTimeout(() => {
-    return {
-      success: true,
-      response: {
-        taskModel: "Product Description",
-        taskStatus: 4,
-        pending: Math.floor(Math.random() * 100),
-        all: Math.floor(Math.random() * 100 + 100),
-      },
-    };
-    // }, 1000);
+    const response = await axios.put(
+      `${process.env.SERVER_URL}/apg/userGeneratedTask/stopBatchGenerateDescription?shopName=${shop}`,
+    );
+    return response.data;
   } catch (error) {
     console.log(error);
     return {
       success: false,
-      message: "Error test",
+      message: "Error StopBatchGenerateDescription",
     };
   }
 };
