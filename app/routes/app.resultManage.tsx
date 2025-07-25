@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   ButtonGroup,
+  Card,
   Divider,
   IndexTable,
   InlineStack,
@@ -222,6 +223,16 @@ const Index = () => {
       UpdateData();
     }
   }, [activeItem]);
+
+  useEffect(() => {
+    if (publishFetcher.data) {
+      if (publishFetcher.data.success) {
+        shopify.toast.show("Description published successfully");
+      } else {
+        shopify.toast.show("Failed to publish description");
+      }
+    }
+  }, [publishFetcher.data]);
 
   const handleSetValue = (text: string) => {
     // 先去除首尾空行，再按行分割，每行用 <p> 包裹
@@ -513,27 +524,35 @@ const Index = () => {
               onChange={(value) => {
                 setUpdateValue(value);
               }}
-              style={{ height: "150px", marginBlockEnd: 50, width: "100%" }}
+              style={{
+                width: "100%",
+              }}
             />
           </Box>
         </IndexTable.Cell>
         <IndexTable.Cell>
-          <BlockStack gap="400" align="end">
-            <Button
-              loading={publishFetcher.state === "submitting" ? true : undefined}
-              variant="primary"
-              onClick={() => handlePublish(id)}
-              disabled={
-                removeHtmlTags(updateValue) ===
-                  removeHtmlTags(generateContent) ||
-                !removeHtmlTags(updateValue)
-              }
-            >
-              Publish Content
-            </Button>
-            <Button variant="primary" onClick={() => setOpen(true)}>
-              ReGenerate
-            </Button>
+          <BlockStack gap="400" align="center">
+            <div style={{ width: "200px" }}>
+              <Button
+                fullWidth={true}
+                loading={
+                  publishFetcher.state === "submitting" ? true : undefined
+                }
+                onClick={() => handlePublish(id)}
+                disabled={!removeHtmlTags(updateValue)}
+              >
+                Publish Content
+              </Button>
+            </div>
+            <div style={{ width: "200px" }}>
+              <Button
+                fullWidth={true}
+                variant="primary"
+                onClick={() => setOpen(true)}
+              >
+                Generate
+              </Button>
+            </div>
           </BlockStack>
         </IndexTable.Cell>
       </IndexTable.Row>
@@ -611,13 +630,12 @@ const Index = () => {
               <IndexTable
                 // condensed={useBreakpoints().smDown}
                 // resourceName={resourceName}
-                loading={tableLoading}
                 itemCount={data.length}
                 selectable={false}
                 headings={[
                   { title: "Module" },
                   { title: "Generated Content" },
-                  { title: "Action", alignment: "end" },
+                  { title: "Action" },
                 ]}
               >
                 {rowMarkup}

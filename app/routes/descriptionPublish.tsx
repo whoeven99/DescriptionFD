@@ -18,7 +18,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         description,
     });
 
-    if (pageType === "product" && contentType === "Description") {
+    if (pageType === "product" && contentType === "description") {
         const response = await admin.graphql(
             `#graphql
             mutation UpdateProduct($product: ProductUpdateInput!) {
@@ -62,7 +62,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 data: null,
             };
         }
-    } else if (pageType === "product" && contentType === "SEODescription") {
+    } else if (pageType === "product" && contentType === "seo") {
         const response = await admin.graphql(
             `#graphql
             mutation UpdateProduct($product: ProductUpdateInput!) {
@@ -110,7 +110,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 data: null,
             };
         }
-    } else if (pageType === "collection" && contentType === "Description") {
+    } else if (pageType === "collection" && contentType === "description") {
         const response = await admin.graphql(
             `#graphql
             mutation UpdateCollection($input: CollectionInput!) {
@@ -154,7 +154,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 data: null,
             };
         }
-    } else if (pageType === "collection" && contentType === "SEODescription") {
+    } else if (pageType === "collection" && contentType === "seo") {
         const response = await admin.graphql(
             `#graphql
             mutation UpdateCollection($input: CollectionInput!) {

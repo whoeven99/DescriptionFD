@@ -59,7 +59,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   );
 
   console.log("batchGenerationData", batchGenerationData);
-  
 
   try {
     const response = await BatchGenerateDescription({
@@ -99,7 +98,7 @@ const Index = () => {
   const [selected, setSelected] = useState(0);
   const [queryValue, setQueryValue] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
-  const { selectedResources, allResourcesSelected, handleSelectionChange } =
+  const { selectedResources, allResourcesSelected, handleSelectionChange, clearSelection } =
     useIndexResourceState(data);
   const { mode, setMode } = useSetIndexFiltersMode();
 
@@ -410,7 +409,7 @@ const Index = () => {
         pageType: "product",
         contentType: contentType,
       });
-      
+
       setTemplates(response);
       setTemplate(response[0].id);
     };
@@ -467,6 +466,7 @@ const Index = () => {
           taskModel: generateFetcher.data.response.taskModel,
           taskStatus: generateFetcher.data.response.taskStatus,
         });
+        clearSelection();
         setOpen(false);
         shopify.toast.show("Batch generation started");
       } else {
@@ -573,29 +573,6 @@ const Index = () => {
       error = true;
     }
     if (error) return;
-
-    // const response = await BatchGenerateDescription({
-    //   server: server as string,
-    //   shop: shop as string,
-    //   language: language,
-    //   productIds: selectedResources,
-    //   pageType: "product",
-    //   contentType: contentType,
-    //   languageStyle: languageStyle,
-    //   brandStyle: brandStyle,
-    //   templateId: Number(template),
-    //   templateType: false,
-    //   model: model,
-    //   seoKeywords: seoKeyword,
-    //   brandWord: brand,
-    //   brandSlogan: brandSlogan,
-    // });
-    // if (response.success) {
-    //   progressDataUpdate();
-    //   shopify.toast.show("Batch generation started");
-    // } else {
-    //   shopify.toast.show("Batch generation failed");
-    // }
     generateFetcher.submit(
       {
         batchGenerationData: JSON.stringify({
@@ -873,7 +850,7 @@ const Index = () => {
 
             <Divider borderColor="border" />
             <BlockStack gap="200">
-              <Text variant="bodyLg" as="p">
+              <Text variant="headingMd" as="h1">
                 AI Generation Settings
               </Text>
               <Select
@@ -905,8 +882,11 @@ const Index = () => {
               />
             </BlockStack>
             <Divider borderColor="border" />
+            <Text variant="headingMd" as="h1">
+              SEO Settings
+            </Text>
             <TextField
-              label="Seo Keywords"
+              label=""
               value={seoKeyword}
               placeholder="Click the 'Enter' to add SEO keywords"
               disabled={seoKeywordTags.length >= 3}
@@ -920,7 +900,7 @@ const Index = () => {
             />
             <Divider borderColor="border" />
             <BlockStack gap="200">
-              <Text variant="bodyLg" as="p">
+              <Text variant="headingMd" as="h1">
                 Brand Settings
               </Text>
               <TextField
@@ -950,8 +930,11 @@ const Index = () => {
                   multiline={4}
                   autoComplete="off"
                 /> */}
+            <Text variant="headingMd" as="h1">
+              Language
+            </Text>
             <Select
-              label="Language"
+              label=""
               options={[
                 {
                   label: "English (United States)",

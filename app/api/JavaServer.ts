@@ -149,7 +149,20 @@ export const BatchGenerateDescription = async ({
   brandSlogan?: string;
 }) => {
   try {
-    console.log(productIds);
+    console.log("data:", {
+      productIds: productIds,
+      textTone: languageStyle,
+      brandTone: brandStyle,
+      templateId: templateId,
+      templateType: templateType,
+      model: model,
+      language: language,
+      seoKeywords: seoKeywords,
+      brandWord: brandWord,
+      brandSlogan: brandSlogan,
+      pageType: pageType,
+      contentType: contentType,
+    });
 
     const response = await axios.put(
       `${process.env.SERVER_URL}/apg/userGeneratedTask/batchGenerateDescription?shopName=${shop}`,
@@ -389,7 +402,11 @@ export const GetUserData = async ({
   }
 };
 
-export const StopBatchGenerateDescription = async ({ shop }: { shop: string }) => {
+export const StopBatchGenerateDescription = async ({
+  shop,
+}: {
+  shop: string;
+}) => {
   try {
     const response = await axios.put(
       `${process.env.SERVER_URL}/apg/userGeneratedTask/stopBatchGenerateDescription?shopName=${shop}`,
