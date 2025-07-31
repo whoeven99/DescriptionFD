@@ -31,6 +31,7 @@ import "react-quill/dist/quill.snow.css";
 import styles from "../styles/styles.module.css";
 import { authenticate } from "app/shopify.server";
 import { GenerateDescription, GetTemplateByShopName } from "app/api/JavaServer";
+import { Modal, TitleBar } from "@shopify/app-bridge-react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const adminAuthResult = await authenticate.admin(request);
@@ -98,8 +99,10 @@ const Index = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [modelPopoverActive, setModelPopoverActive] = useState(false);
+  const [open, setOpen] = useState(false);
   const [seoKeywordError, setSeoKeywordError] = useState("");
   const [productError, setProductError] = useState("");
+  const [originalDescription, setOriginalDescription] = useState<any>(null);
   const [originalData, setOriginalData] = useState<any>(null);
   const [editedData, setEditedData] = useState<any>(null);
   const [templates, setTemplates] = useState<any>([]);
@@ -352,6 +355,7 @@ const Index = () => {
   const productInfoFetcher = useFetcher<any>();
   const shopOwnerNameFetcher = useFetcher<any>();
   const publishFetcher = useFetcher<any>();
+  const originalDescriptionFetcher = useFetcher<any>();
 
   useEffect(() => {
     const shopOwnerName = localStorage.getItem("shopOwnerName");
@@ -550,6 +554,22 @@ const Index = () => {
     }
   }, [publishFetcher.data]);
 
+  useEffect(() => {
+    if (originalDescriptionFetcher.data) {
+      if (originalDescriptionFetcher.data.success) {
+        console.log(
+          "originalDescriptionFetcher.data.response.description",
+          originalDescriptionFetcher.data.response.description,
+        );
+        setOriginalDescription(
+          originalDescriptionFetcher.data.response.description,
+        );
+      } else {
+        shopify.toast.show("Failed to get original description");
+      }
+    }
+  }, [originalDescriptionFetcher.data]);
+
   const updateSelection = useCallback(
     (selected: string[]) => {
       if (selected.length === 0) {
@@ -705,6 +725,15 @@ const Index = () => {
     }
     setIsGenerating(true);
     startTipTimer(); // 开始定时器
+
+    console.log("selectedOptions", selectedOptions);
+
+    originalDescriptionFetcher.submit(
+      {
+        productId: selectedOptions[0],
+      },
+      { method: "POST", action: "/getProductInfoById" },
+    );
 
     const response = await GenerateDescription({
       server: server as string,
@@ -1529,12 +1558,15 @@ const Index = () => {
                               }
                             >
                               {isEdit ? (
-                                <ButtonGroup>
+                                <BlockStack align="space-between">
+                                  <Button variant="tertiary" onClick={() => {}}>
+                                    View original description
+                                  </Button>
                                   <Button onClick={handleConfirm}>
                                     Confirm
                                   </Button>
                                   {/* <Button onClick={handleCancel}>Cancel</Button> */}
-                                </ButtonGroup>
+                                </BlockStack>
                               ) : (
                                 <>
                                   <ButtonGroup>
@@ -1576,6 +1608,16 @@ const Index = () => {
           </Layout.Section>
         </Layout>
       </BlockStack>
+      <Modal open={open} variant="large" onHide={() => setOpen(false)}>
+        <TitleBar title={`Original description`}>
+          <button onClick={() => setOpen(false)}>Close</button>
+        </TitleBar>
+        <Box padding="400">
+          <Text as="p" variant="bodyMd">
+            {originalDescription}
+          </Text>
+        </Box>
+      </Modal>
     </Page>
   );
 };
