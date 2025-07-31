@@ -8,13 +8,15 @@ import {
   Text,
 } from "@shopify/polaris";
 import { useFetcher, useNavigate } from "@remix-run/react";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 interface DetailProgressProps {
   total: number;
   unfinished: number;
   moduleName: string;
   status: number;
   progress: number;
+  handleStop: () => void;
+  loading: boolean;
 }
 
 const DetailProgress: React.FC<DetailProgressProps> = ({
@@ -23,30 +25,59 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
   moduleName,
   status,
   progress,
+  handleStop,
+  loading,
 }) => {
   const navigate = useNavigate();
 
-  const stopFetcher = useFetcher<any>();
+  const [currentTipIndex, setCurrentTipIndex] = useState<number>(0);
+
+  const tipIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const tipTexts = useMemo(
+    () => [
+      `Creating ${moduleName} module: `,
+      "Each product takes about 10-20 seconds to create...",
+      "Syncing outline to AI model",
+      "AI big models are returning content",
+    ],
+    [],
+  );
 
   useEffect(() => {
-    if (stopFetcher.data?.success) {
-      navigate("/app/resultManage");
-    }
-  }, [stopFetcher.data]);
+    return () => {
+      if (tipIntervalRef.current) {
+        clearInterval(tipIntervalRef.current);
+      }
+    };
+  }, []);
 
-  const handleStop = () => {
-    stopFetcher.submit(
-      {},
-      {
-        method: "POST",
-        action: "/stopBatchGenerateDescription",
-      },
-    );
-  };
+  useEffect(() => {
+    if (status === 2) {
+      startTipTimer();
+    } else {
+      stopTipTimer();
+    }
+  }, [status]);
+
+  const startTipTimer = useCallback(() => {
+    setCurrentTipIndex(0);
+    tipIntervalRef.current = setInterval(() => {
+      setCurrentTipIndex((prev) => (prev + 1) % tipTexts.length);
+    }, 2000);
+  }, [tipTexts.length]);
+
+  const stopTipTimer = useCallback(() => {
+    if (tipIntervalRef.current) {
+      clearInterval(tipIntervalRef.current);
+      tipIntervalRef.current = null;
+    }
+    setCurrentTipIndex(0);
+  }, []);
 
   const pendingDoc = (
     <div>
-      <Text as="h2">Creating {moduleName} module: </Text>
+      <Text as="h2">{tipTexts[currentTipIndex]}</Text>
       <Text as="h2">
         Completed: {total - unfinished < 0 ? 0 : total - unfinished}, pending:{" "}
         {unfinished}
@@ -142,12 +173,7 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
                   </Button>
                 )}
                 {status === 2 && (
-                  <Button
-                    onClick={handleStop}
-                    loading={
-                      stopFetcher.state === "submitting" ? true : undefined
-                    }
-                  >
+                  <Button onClick={handleStop} loading={loading}>
                     Stop
                   </Button>
                 )}

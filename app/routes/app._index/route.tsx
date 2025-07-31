@@ -103,7 +103,9 @@ const Index = () => {
   const [originalData, setOriginalData] = useState<any>(null);
   const [editedData, setEditedData] = useState<any>(null);
   const [templates, setTemplates] = useState<any>([]);
+  const [currentTipIndex, setCurrentTipIndex] = useState<number>(0);
 
+  const tipIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstLoad = useRef(true);
 
   // const filterTemplates = useMemo(() => {
@@ -124,6 +126,16 @@ const Index = () => {
 
   //   return allTemplates;
   // }, [pageType, contentType, templates]);
+
+  const tipTexts = useMemo(
+    () => [
+      "Generated content will appear here",
+      "Each product takes about 10-20 seconds to create...",
+      "Syncing outline to AI model",
+      "AI big models are returning content",
+    ],
+    [],
+  );
 
   const brandStyleOptions = useMemo(
     () => [
@@ -354,6 +366,15 @@ const Index = () => {
     // setLoading(false);
   }, []);
 
+  // 添加清理定时器的useEffect
+  useEffect(() => {
+    return () => {
+      if (tipIntervalRef.current) {
+        clearInterval(tipIntervalRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Enter" && seoKeywords && focusSeoKeywordInput) {
@@ -422,13 +443,8 @@ const Index = () => {
         pageType: pageType,
         contentType: contentType,
       });
-      // if (response.success) {
       setTemplates(response);
       setTemplate(response[0].id.toString());
-      //   setTemplate(response.response[0].id.toString());
-      // } else {
-      //   setTemplates(null);
-      // }
     };
     fetchTemplates();
   }, [pageType, contentType]);
@@ -457,6 +473,7 @@ const Index = () => {
               <Thumbnail
                 source={item.image || "/img_default-min.webp"}
                 alt={item.title}
+                size="small"
               />
             ),
           })),
@@ -687,8 +704,7 @@ const Index = () => {
       return;
     }
     setIsGenerating(true);
-
-    console.log("template", template);
+    startTipTimer(); // 开始定时器
 
     const response = await GenerateDescription({
       server: server as string,
@@ -708,6 +724,7 @@ const Index = () => {
     });
     if (response.success) {
       setIsGenerating(false);
+      stopTipTimer(); // 停止定时器
       console.log(response.response);
       setEditedData(response.response);
       setOriginalData(response.response);
@@ -746,22 +763,26 @@ const Index = () => {
       // }
     } else {
       setIsGenerating(false);
+      stopTipTimer(); // 停止定时器
       shopify.toast.show("Failed to generate description");
     }
   };
 
-  //   return loading ? (
-  //     <div
-  //       style={{
-  //         display: "flex",
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //         height: "100vh",
-  //       }}
-  //     >
-  //       <Spinner />
-  //     </div>
-  //   ) : (
+  const startTipTimer = useCallback(() => {
+    setCurrentTipIndex(0);
+    tipIntervalRef.current = setInterval(() => {
+      setCurrentTipIndex((prev) => (prev + 1) % tipTexts.length);
+    }, 2000);
+  }, [tipTexts.length]);
+
+  const stopTipTimer = useCallback(() => {
+    if (tipIntervalRef.current) {
+      clearInterval(tipIntervalRef.current);
+      tipIntervalRef.current = null;
+    }
+    setCurrentTipIndex(0);
+  }, []);
+
   return (
     <Page
       title={`Hi ${shopOwnerName}!`}
@@ -866,10 +887,13 @@ const Index = () => {
                         />
                         <Select
                           label="Template"
-                          options={templates?.map((template: any) => ({
-                            label: template.templateTitle,
-                            value: template.id.toString(),
-                          }))}
+                          options={templates?.map(
+                            (template: any, index: number) => ({
+                              key: index.toString(),
+                              label: template.templateTitle,
+                              value: template.id.toString(),
+                            }),
+                          )}
                           value={template}
                           onChange={(value) => handleTemplateChange(value)}
                         />
@@ -1426,98 +1450,115 @@ const Index = () => {
                   <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 8 }}>
                     <div
                       className={
-                        styles.Ciwi_QuickGenerator_Result +
+                        styles.Ciwi_QuickGenerator_Container +
                         " " +
                         (editedData && !isEdit ? styles.hasResult : "") +
                         " " +
-                        (isEdit ? styles.isEdit : "")
+                        (editedData && isEdit ? styles.isEdit : "")
                       }
                     >
-                      {!editedData && !isGenerating ? (
-                        <div
-                          className={styles.Ciwi_QuickGenerator_Result_Empty}
-                        >
-                          <Text as="p" variant="bodyMd">
-                            Generated content will appear here
-                          </Text>
+                      {editedData ? (
+                        <div className={styles.Ciwi_QuickGenerator_Report}>
+                          11111111
                         </div>
                       ) : null}
-                      {isGenerating ? (
+                      <div
+                        className={
+                          styles.Ciwi_QuickGenerator_Result +
+                          " " +
+                          (!editedData ? styles.defaultStatus : "")
+                        }
+                      >
+                        {!editedData ? (
+                          <div
+                            className={styles.Ciwi_QuickGenerator_Result_Empty}
+                          >
+                            <Text as="p" variant="bodyMd">
+                              {tipTexts[currentTipIndex]}
+                            </Text>
+                          </div>
+                        ) : null}
+                        {/* {isGenerating ? (
                         <div
                           className={styles.Ciwi_QuickGenerator_Result_Loading}
                         >
                           <SkeletonBodyText lines={10} />
                         </div>
-                      ) : null}
-                      {editedData && !isGenerating ? (
-                        <div
-                          className={styles.Ciwi_QuickGenerator_Result_Content}
-                        >
-                          {isEdit ? (
-                            <div
-                              className={
-                                styles.Ciwi_QuickGenerator_Result_Editor
-                              }
-                            >
-                              <ReactQuill
-                                value={editedData.description}
-                                onChange={(value) =>
-                                  setEditedData({
-                                    ...editedData,
-                                    description: value,
-                                  })
-                                }
-                                style={{ height: "850px" }}
-                              />
-                            </div>
-                          ) : (
-                            <div
-                              className={
-                                styles.Ciwi_QuickGenerator_Result_Markdown
-                              }
-                            >
-                              <div
-                                dangerouslySetInnerHTML={{
-                                  __html: editedData.description,
-                                }}
-                              />
-                            </div>
-                          )}
+                      ) : null} */}
+                        {editedData ? (
                           <div
                             className={
-                              styles.Ciwi_QuickGenerator_Result_Feedback +
-                              " " +
-                              (isEdit ? styles.Edit_Button : "")
+                              styles.Ciwi_QuickGenerator_Result_Content
                             }
                           >
                             {isEdit ? (
-                              <ButtonGroup>
-                                <Button onClick={handleConfirm}>Confirm</Button>
-                                <Button onClick={handleCancel}>Cancel</Button>
-                              </ButtonGroup>
+                              <div
+                                className={
+                                  styles.Ciwi_QuickGenerator_Result_Editor
+                                }
+                              >
+                                <ReactQuill
+                                  value={editedData?.description || "<p></p>"}
+                                  onChange={(value) => {
+                                    setEditedData({
+                                      ...editedData,
+                                      description: value,
+                                    });
+                                  }}
+                                  style={{ height: "700px" }}
+                                />
+                              </div>
                             ) : (
-                              <>
-                                <ButtonGroup>
-                                  <Button
-                                    onClick={handlePublish}
-                                    loading={
-                                      publishFetcher.state === "submitting"
-                                    }
-                                  >
-                                    Publish
-                                  </Button>
-                                  <Button onClick={handleEdit}>Edit</Button>
-                                </ButtonGroup>
-                                {/* <InlineStack gap="100">
-                                                                    <Button icon={ClipboardIcon} variant="tertiary" />
-                                                                    <Button icon={ThumbsUpIcon} variant="tertiary" />
-                                                                    <Button icon={ThumbsDownIcon} variant="tertiary" />
-                                                                </InlineStack> */}
-                              </>
+                              <div
+                                className={
+                                  styles.Ciwi_QuickGenerator_Result_Markdown
+                                }
+                              >
+                                <div
+                                  dangerouslySetInnerHTML={{
+                                    __html: editedData?.description || "",
+                                  }}
+                                />
+                              </div>
                             )}
+                            <div
+                              className={
+                                styles.Ciwi_QuickGenerator_Result_Feedback +
+                                " " +
+                                (isEdit ? styles.Edit_Button : "")
+                              }
+                            >
+                              {isEdit ? (
+                                <ButtonGroup>
+                                  <Button onClick={handleConfirm}>
+                                    Confirm
+                                  </Button>
+                                  {/* <Button onClick={handleCancel}>Cancel</Button> */}
+                                </ButtonGroup>
+                              ) : (
+                                <>
+                                  <ButtonGroup>
+                                    <Button
+                                      onClick={handlePublish}
+                                      loading={
+                                        publishFetcher.state === "submitting"
+                                      }
+                                    >
+                                      Publish
+                                    </Button>
+                                    <Button onClick={handleEdit}>Edit</Button>
+                                  </ButtonGroup>
+                                  {/* <InlineStack gap="100">
+                                    <Button icon={ClipboardIcon} variant="tertiary" />
+                                    <Button icon={ThumbsUpIcon} variant="tertiary" />
+                                    <Button icon={ThumbsDownIcon} variant="tertiary" />
+                                </InlineStack> */}
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ) : null}
+                        ) : null}
+                      </div>
                     </div>
                   </Grid.Cell>
                 </Grid>
@@ -1537,7 +1578,6 @@ const Index = () => {
       </BlockStack>
     </Page>
   );
-  //   );
 };
 
 export const removeHtmlTags = (str: string) => {

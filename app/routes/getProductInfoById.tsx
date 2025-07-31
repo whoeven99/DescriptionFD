@@ -14,17 +14,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 id
                 title
                 status
+                descriptionHtml
                 media(first: 1) {
-                edges {
-                    node {
-                    preview {
-                        image {
-                        id
-                        url
+                  edges {
+                      node {
+                        preview {
+                            image {
+                            id
+                            url
+                            }
                         }
-                    }
-                    }
-                }
+                      }
+                  }
                 }
             }
           }`,

@@ -1,5 +1,15 @@
-import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, Outlet, useFetcher, useLoaderData, useRouteError } from "@remix-run/react";
+import type {
+  ActionFunctionArgs,
+  HeadersFunction,
+  LoaderFunctionArgs,
+} from "@remix-run/node";
+import {
+  Link,
+  Outlet,
+  useFetcher,
+  useLoaderData,
+  useRouteError,
+} from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
@@ -8,6 +18,8 @@ import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { authenticate } from "../shopify.server";
 import axios from "axios";
 import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { setUserConfigLanguage } from "app/store/modules/userConfig";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -23,39 +35,76 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const adminAuthResult = await authenticate.admin(request);
   const { session, admin } = adminAuthResult;
   const shopName = session?.shop;
-  const response = await admin.graphql(
-    `#graphql
-    query {
-      shop {
-        shopOwnerName
-        email
-      }
-    }`
-  );
-  const data = await response.json();
-  const graphqlData = data.data.shop;
-  await axios.get(`${process.env.SERVER_URL}/apg/userCounter/initUserCounter?shopName=${shopName}`);
-  await axios.post(`${process.env.SERVER_URL}/apg/users/insertOrUpdateApgUser?shopName=${shopName}`,
-    {
-      shopName: shopName,
-      id: 0,
-      accessToken: session?.accessToken,
-      email: graphqlData.email,
-      firstName: graphqlData.shopOwnerName.split(" ")[0],
-      lastName: graphqlData.shopOwnerName.split(" ")[1]
-    });
-  return null;
-}
+  try {
+    const response = await admin.graphql(
+      `#graphql
+      query {
+        shop {
+          shopOwnerName
+          email
+        }
+        # shopLocales{
+        #   locale
+        #   name
+        #   primary
+        #   published
+        # }
+      }`,
+    );
+
+    const data = await response.json();
+
+    // const primaryLanguage = data.data.shopLocales.find(
+    //   (locale: any) => locale.primary,
+    // )?.name;
+    const graphqlData = data.data.shop;
+    await axios.get(
+      `${process.env.SERVER_URL}/apg/userCounter/initUserCounter?shopName=${shopName}`,
+    );
+    await axios.post(
+      `${process.env.SERVER_URL}/apg/users/insertOrUpdateApgUser?shopName=${shopName}`,
+      {
+        shopName: shopName,
+        id: 0,
+        accessToken: session?.accessToken,
+        email: graphqlData.email,
+        firstName: graphqlData.shopOwnerName.split(" ")[0],
+        lastName: graphqlData.shopOwnerName.split(" ")[1],
+      },
+    );
+    return {
+      success: true,
+      errorCode: 0,
+      errorMsg: "",
+      // response: primaryLanguage,
+    };
+  } catch (error) {
+    console.log("error", error);
+    return {
+      success: false,
+      errorCode: 1,
+      errorMsg: "Failed to get primary language",
+      // response: "English",
+    };
+  }
+};
 
 export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
+  // const dispatch = useDispatch();
   const initFetcher = useFetcher<any>();
 
   useEffect(() => {
     initFetcher.submit(null, {
       method: "POST",
-    })
+    });
   }, []);
+
+  // useEffect(() => {
+  //   if (initFetcher.data?.success) {
+  //     dispatch(setUserConfigLanguage(initFetcher.data.response));
+  //   }
+  // }, [initFetcher.data]);
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
@@ -65,6 +114,7 @@ export default function App() {
         </Link>
         <Link to="/app/batchGeneration">Batch Generation</Link>
         <Link to="/app/template">Template</Link>
+        <Link to="/app/pricing">Pricing</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>

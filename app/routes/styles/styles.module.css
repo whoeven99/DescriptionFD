@@ -39,20 +39,34 @@
 .Ciwi_QuickGenerator_Result {
   height: 100%;
   border-radius: 16px;
-  background-color: #f7f7f7;
   padding: 16px 16px 80px;
-  max-height: 1000px;
-}
-
-.hasResult {
   background-color: var(--p-color-bg-fill-magic-secondary);
   border: 1px solid #e3e3e3;
   color: var(--p-color-bg-fill-magic);
 }
 
+.defaultStatus {
+  background-color: #f7f7f7;
+  color: currentColor;
+  border: 0;
+}
+
+.hasResult {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .isEdit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   padding: 0;
   background-color: #fff;
+}
+
+.Ciwi_QuickGenerator_Container {
+  height: 100%;
 }
 
 .Ciwi_QuickGenerator_Result_Empty {
@@ -93,10 +107,34 @@
   right: 0;
   border-radius: 0 0 16px 16px;
   gap: 16px;
+  justify-content: end;
 }
 
 .Edit_Button {
   margin: 0;
   bottom: 0;
-  justify-content: end;
+}
+
+.Ciwi_QuickGenerator_Report {
+  height: 200px;
+  border-radius: 16px;
+  padding: 16px 16px 80px;
+  background-color: var(--p-color-bg-fill-magic-secondary);
+  border: 1px solid #e3e3e3;
+  color: var(--p-color-bg-fill-magic);
+  overflow: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.Ciwi_Pricing_Card {
+  cursor: pointer;
+}
+
+.Ciwi_Pricing_Card:hover {
+  background-color: #f7f7f7;
+}
+
+.Ciwi_Pricing_Card_Selected {
+  background-color: #f7f7f7;
 }

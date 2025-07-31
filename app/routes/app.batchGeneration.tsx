@@ -98,8 +98,12 @@ const Index = () => {
   const [selected, setSelected] = useState(0);
   const [queryValue, setQueryValue] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
-  const { selectedResources, allResourcesSelected, handleSelectionChange, clearSelection } =
-    useIndexResourceState(data);
+  const {
+    selectedResources,
+    allResourcesSelected,
+    handleSelectionChange,
+    clearSelection,
+  } = useIndexResourceState(data);
   const { mode, setMode } = useSetIndexFiltersMode();
 
   const [contentType, setContentType] = useState<"description" | "seo">(
@@ -411,21 +415,23 @@ const Index = () => {
       });
 
       setTemplates(response);
-      setTemplate(response[0].id);
+      if (response && response.length > 0) {
+        setTemplate(response[0].id);
+      }
     };
     fetchTemplates();
   }, [contentType]);
 
   useEffect(() => {
     if (fetcher.data) {
-      const data = fetcher.data.response.data.map((item: any) => ({
+      const mappedData = fetcher.data.response.data.map((item: any) => ({
         id: item.id,
         productTitle: item.title,
         productImageUrl: item.image,
         status: item.status,
         version: 1.0,
       }));
-      setData(data);
+      setData(mappedData);
       setPagination({
         hasNextPage: fetcher.data.response.hasNextPage,
         hasPreviousPage: fetcher.data.response.hasPreviousPage,
@@ -441,7 +447,7 @@ const Index = () => {
         });
         if (response.response !== null) {
           setData(
-            data.map((dataItem: any) => ({
+            mappedData.map((dataItem: any) => ({
               ...dataItem,
               updateTime:
                 response.response.find(
@@ -607,7 +613,7 @@ const Index = () => {
     ({ id, productTitle, productImageUrl, status, updateTime }, index) => (
       <IndexTable.Row
         id={id}
-        key={id}
+        key={index}
         selected={selectedResources.includes(id)}
         position={index}
         onClick={() => {}}
@@ -715,7 +721,7 @@ const Index = () => {
     >
       <Layout>
         <Layout.Section>
-          {progress ? (
+          {progress && (
             <DetailProgress
               total={progress.allCount}
               unfinished={progress.unfinishedCount}
@@ -726,9 +732,9 @@ const Index = () => {
                   progress.allCount) *
                 100
               }
+              handleStop={handleStop}
+              loading={stopFetcher.state === "submitting"}
             />
-          ) : (
-            <CardSkeleton height="100px" />
           )}
         </Layout.Section>
         <Layout.Section>
@@ -867,7 +873,8 @@ const Index = () => {
               />
               <Select
                 label="Template"
-                options={templates?.map((template: any) => ({
+                options={templates?.map((template: any, index: number) => ({
+                  key: index.toString(),
                   label: template.templateTitle,
                   value: template.id.toString(),
                 }))}
@@ -877,8 +884,8 @@ const Index = () => {
               <Select
                 label="Model selection"
                 options={modelSelectionOptions}
-                value={template}
-                onChange={(value) => setTemplate(value)}
+                value={model}
+                onChange={(value) => setModel(value)}
               />
             </BlockStack>
             <Divider borderColor="border" />

@@ -56,94 +56,13 @@ const Index = () => {
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
     useIndexResourceState(data);
   const [selectedLanguage, setSelectedLanguage] = useState("English");
-  const [menuItems, setMenuItems] = useState([
-    {
-      title: "Product Description Product Description",
-      id: "productDescription1",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription2",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription3",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription4",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription5",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription6",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription7",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription8",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription9",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription10",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription11",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription12",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription13",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription14",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription15",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription16",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription17",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription18",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription19",
-    },
-    {
-      title: "Product Description",
-      id: "productDescription20",
-    },
-  ]);
-  const [activeItem, setActiveItem] = useState("");
-  const [isMobile, setIsMobile] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [tableLoading, setTableLoading] = useState(true);
-  const [open, setOpen] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [activeItem, setActiveItem] = useState<string>("");
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [tableLoading, setTableLoading] = useState<boolean>(true);
+  const [open, setOpen] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
   const [brandStyle, setBrandStyle] = useState<string>("");
   const [languageStyle, setLanguageStyle] = useState<string>("formal");
@@ -158,6 +77,7 @@ const Index = () => {
   const [language, setLanguage] = useState<string>("English");
   const [updateValue, setUpdateValue] = useState<string>("");
 
+  const productFetcher = useFetcher<any>();
   const productsFetcher = useFetcher<any>();
   const publishFetcher = useFetcher<any>();
 
@@ -174,6 +94,19 @@ const Index = () => {
       }
     }
   }, [productsFetcher.data]);
+
+  useEffect(() => {
+    if (productFetcher.data) {
+      if (productFetcher.data.success) {
+        setData([
+          {
+            ...data[0],
+            originalContent: productFetcher.data.response.descriptionHtml,
+          },
+        ]);
+      }
+    }
+  }, [productFetcher.data]);
 
   useEffect(() => {
     setTemplate("");
@@ -196,6 +129,15 @@ const Index = () => {
     if (activeItem) {
       setTableLoading(true);
       setData([]);
+      productFetcher.submit(
+        {
+          productId: activeItem,
+        },
+        {
+          method: "POST",
+          action: "/getProductInfoById",
+        },
+      );
       const UpdateData = async () => {
         const response = await GetProductsByListId({
           server: server as string,
@@ -500,7 +442,10 @@ const Index = () => {
   );
 
   const rowMarkup = data.map(
-    ({ id, pageType, contentType, generateContent }, index) => (
+    (
+      { id, pageType, contentType, generateContent, originalContent },
+      index,
+    ) => (
       <IndexTable.Row
         id={id}
         key={id}
@@ -512,6 +457,20 @@ const Index = () => {
           <Text variant="bodyMd" as="span">
             {pageType} {contentType}
           </Text>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Box maxWidth={"1500px"}>
+            <ReactQuill
+              readOnly={true}
+              value={originalContent}
+              onChange={(value) => {
+                setUpdateValue(value);
+              }}
+              style={{
+                width: "100%",
+              }}
+            />
+          </Box>
         </IndexTable.Cell>
         <IndexTable.Cell>
           <Box maxWidth={"1500px"}>
@@ -601,7 +560,7 @@ const Index = () => {
                   wrap={false}
                 >
                   <Text variant="headingMd" as="h1">
-                    {menuItems.find((item) => item.id === activeItem)?.title}
+                    {menuItems.find((item) => item?.id === activeItem)?.title}
                   </Text>
                   {/* <Select
                     label=""
@@ -630,6 +589,7 @@ const Index = () => {
                 selectable={false}
                 headings={[
                   { title: "Module" },
+                  { title: "Original Content" },
                   { title: "Generated Content" },
                   { title: "Action" },
                 ]}
@@ -678,7 +638,8 @@ const Index = () => {
               />
               <Select
                 label="Template"
-                options={templates?.map((template: any) => ({
+                options={templates?.map((template: any, index: number) => ({
+                  key: index.toString(),
                   label: template.templateTitle,
                   value: template.id.toString(),
                 }))}
