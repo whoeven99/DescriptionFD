@@ -129,12 +129,14 @@
 
 .Ciwi_Pricing_Card {
   cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
 }
 
 .Ciwi_Pricing_Card:hover {
-  background-color: #f7f7f7;
+  border: 2px solid rgb(0, 127, 97);
 }
 
 .Ciwi_Pricing_Card_Selected {
-  background-color: #f7f7f7;
+  border: 2px solid rgb(0, 127, 97);
 }
