@@ -557,12 +557,8 @@ const Index = () => {
   useEffect(() => {
     if (originalDescriptionFetcher.data) {
       if (originalDescriptionFetcher.data.success) {
-        console.log(
-          "originalDescriptionFetcher.data.response.description",
-          originalDescriptionFetcher.data.response.description,
-        );
         setOriginalDescription(
-          originalDescriptionFetcher.data.response.description,
+          originalDescriptionFetcher.data.response.descriptionHtml,
         );
       } else {
         shopify.toast.show("Failed to get original description");
@@ -726,8 +722,6 @@ const Index = () => {
     setIsGenerating(true);
     startTipTimer(); // 开始定时器
 
-    console.log("selectedOptions", selectedOptions);
-
     originalDescriptionFetcher.submit(
       {
         productId: selectedOptions[0],
@@ -754,7 +748,6 @@ const Index = () => {
     if (response.success) {
       setIsGenerating(false);
       stopTipTimer(); // 停止定时器
-      console.log(response.response);
       setEditedData(response.response);
       setOriginalData(response.response);
       // if (
@@ -1486,11 +1479,11 @@ const Index = () => {
                         (editedData && isEdit ? styles.isEdit : "")
                       }
                     >
-                      {editedData ? (
+                      {/* {editedData ? (
                         <div className={styles.Ciwi_QuickGenerator_Report}>
                           11111111
                         </div>
-                      ) : null}
+                      ) : null} */}
                       <div
                         className={
                           styles.Ciwi_QuickGenerator_Result +
@@ -1558,17 +1551,24 @@ const Index = () => {
                               }
                             >
                               {isEdit ? (
-                                <BlockStack align="space-between">
-                                  <Button variant="tertiary" onClick={() => {}}>
+                                <Button onClick={handleConfirm}>Confirm</Button>
+                              ) : (
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    width: "100%",
+                                  }}
+                                >
+                                  <Button
+                                    variant="tertiary"
+                                    onClick={() => {
+                                      setOpen(true);
+                                    }}
+                                  >
                                     View original description
                                   </Button>
-                                  <Button onClick={handleConfirm}>
-                                    Confirm
-                                  </Button>
-                                  {/* <Button onClick={handleCancel}>Cancel</Button> */}
-                                </BlockStack>
-                              ) : (
-                                <>
                                   <ButtonGroup>
                                     <Button
                                       onClick={handlePublish}
@@ -1580,12 +1580,7 @@ const Index = () => {
                                     </Button>
                                     <Button onClick={handleEdit}>Edit</Button>
                                   </ButtonGroup>
-                                  {/* <InlineStack gap="100">
-                                    <Button icon={ClipboardIcon} variant="tertiary" />
-                                    <Button icon={ThumbsUpIcon} variant="tertiary" />
-                                    <Button icon={ThumbsDownIcon} variant="tertiary" />
-                                </InlineStack> */}
-                                </>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -1613,9 +1608,11 @@ const Index = () => {
           <button onClick={() => setOpen(false)}>Close</button>
         </TitleBar>
         <Box padding="400">
-          <Text as="p" variant="bodyMd">
-            {originalDescription}
-          </Text>
+          <div
+            dangerouslySetInnerHTML={{
+              __html: originalDescription,
+            }}
+          />
         </Box>
       </Modal>
     </Page>

@@ -107,12 +107,12 @@
   right: 0;
   border-radius: 0 0 16px 16px;
   gap: 16px;
-  justify-content: end;
 }
 
 .Edit_Button {
   margin: 0;
   bottom: 0;
+  justify-content: end;
 }
 
 .Ciwi_QuickGenerator_Report {
