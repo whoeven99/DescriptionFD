@@ -107,6 +107,16 @@ export const GenerateDescription = async ({
         },
       };
     }
+    // return{
+    //   success: true,
+    //   error: null,
+    //   errorMsg: null,
+    //   response: {
+    //     description: "test",
+    //     pageType: pageType,
+    //     contentType: contentType,
+    //   },
+    // };
     return response.data;
   } catch (error) {
     console.log(error);

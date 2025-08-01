@@ -83,6 +83,12 @@
   height: 100%;
 }
 
+.Ciwi_QuickGenerator_Result_Content_Edit {
+  background-color: var(--p-color-bg-surface);
+  padding: 16px;
+  color: currentColor;
+}
+
 .Ciwi_QuickGenerator_Result_Markdown {
   height: 100%;
   overflow: auto;
