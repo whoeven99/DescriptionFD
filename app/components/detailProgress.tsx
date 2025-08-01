@@ -177,25 +177,26 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
                     Stop
                   </Button>
                 )}
-                {/* {status === 3 && (
+                {status === 3 && (
                 <BlockStack gap="200">
                   <Button
                     variant="primary"
                     onClick={() => {
+                      navigate("/app/pricing");
                     }}
                   >
                     Purchase amount
                   </Button>
-                  <Button
+                  {/* <Button
                     variant="primary"
                     onClick={() => {
                     }}
                   >
                     Continue to create
-                  </Button>
+                  </Button> */}
                 </BlockStack>
-              )} */}
-                {(status === 4 || status === 3) && (
+              )}
+                {(status === 4) && (
                   <Button onClick={handleContactSupport}>
                     Contact the Team
                   </Button>

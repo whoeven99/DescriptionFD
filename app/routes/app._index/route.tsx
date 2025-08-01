@@ -1488,7 +1488,11 @@ const Index = () => {
                         className={
                           styles.Ciwi_QuickGenerator_Result +
                           " " +
-                          (!editedData ? styles.defaultStatus : "")
+                          (!editedData ? styles.defaultStatus : "") +
+                          " " +
+                          (editedData && isEdit
+                            ? styles.Ciwi_QuickGenerator_Result_Content_Edit
+                            : "")
                         }
                       >
                         {!editedData ? (
@@ -1527,7 +1531,7 @@ const Index = () => {
                                       description: value,
                                     });
                                   }}
-                                  style={{ height: "700px" }}
+                                  style={{ height: "900px" }}
                                 />
                               </div>
                             ) : (
