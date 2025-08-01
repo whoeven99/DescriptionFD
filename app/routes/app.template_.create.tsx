@@ -39,13 +39,13 @@ import styles from "./styles/styles.module.css";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import axios from "axios";
 import { authenticate } from "app/shopify.server";
-import { GenerateDescription } from "app/api/JavaServer";
+import { CreateUserTemplate, GenerateDescription } from "app/api/JavaServer";
 
 const originalData = {
   name: "",
   description: "",
   pageType: "product",
-  contentType: "Description",
+  contentType: "description",
   content: "",
 };
 
@@ -130,50 +130,50 @@ const Index = () => {
 
   const navigate = useNavigate();
 
-  const fetcher = useFetcher<any>();
+  // const fetcher = useFetcher<any>();
 
-  useEffect(() => {
-    if (updateData.pageType === "product") {
-      setOptions([]);
-      setLoading(true);
-      if (isFirstLoad.current) {
-        fetcher.submit(
-          { query: textValue },
-          { method: "POST", action: "/getProductInfo" },
-        );
-        isFirstLoad.current = false;
-      }
-    } else {
-      setOptions([]);
-      setLoading(true);
-      if (isFirstLoad.current) {
-        fetcher.submit(
-          { query: textValue },
-          { method: "POST", action: "/getCollectionInfo" },
-        );
-        isFirstLoad.current = false;
-      }
-    }
-  }, [updateData.pageType, textValue]);
+  // useEffect(() => {
+  //   if (updateData.pageType === "product") {
+  //     setOptions([]);
+  //     setLoading(true);
+  //     if (isFirstLoad.current) {
+  //       fetcher.submit(
+  //         { query: textValue },
+  //         { method: "POST", action: "/getProductInfo" },
+  //       );
+  //       isFirstLoad.current = false;
+  //     }
+  //   } else {
+  //     setOptions([]);
+  //     setLoading(true);
+  //     if (isFirstLoad.current) {
+  //       fetcher.submit(
+  //         { query: textValue },
+  //         { method: "POST", action: "/getCollectionInfo" },
+  //       );
+  //       isFirstLoad.current = false;
+  //     }
+  //   }
+  // }, [updateData.pageType, textValue]);
 
-  useEffect(() => {
-    if (fetcher.data) {
-      if (fetcher.data.success) {
-        setLoading(false);
-        setOptions((prev) => [
-          ...prev,
-          ...fetcher.data!.response.data.map((item: any) => ({
-            id: item.id,
-            label: item.title,
-            value: item.id,
-            media: <Thumbnail source={item.image} alt={item.title} />,
-          })),
-        ]);
-        setWillLoadMoreResults(fetcher.data!.response.hasNextPage);
-        setEndCursor(fetcher.data!.response.endCursor);
-      }
-    }
-  }, [fetcher.data]);
+  // useEffect(() => {
+  //   if (fetcher.data) {
+  //     if (fetcher.data.success) {
+  //       setLoading(false);
+  //       setOptions((prev) => [
+  //         ...prev,
+  //         ...fetcher.data!.response.data.map((item: any) => ({
+  //           id: item.id,
+  //           label: item.title,
+  //           value: item.id,
+  //           media: <Thumbnail source={item.image} alt={item.title} />,
+  //         })),
+  //       ]);
+  //       setWillLoadMoreResults(fetcher.data!.response.hasNextPage);
+  //       setEndCursor(fetcher.data!.response.endCursor);
+  //     }
+  //   }
+  // }, [fetcher.data]);
 
   useEffect(() => {
     if (JSON.stringify(updateData) !== JSON.stringify(originalData)) {
@@ -183,7 +183,7 @@ const Index = () => {
     }
   }, [updateData]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (updateData.name === "") {
       setNameError("Name is required");
     } else {
@@ -197,7 +197,24 @@ const Index = () => {
     if (nameError || contentError) {
       return;
     }
-    shopify.saveBar.hide("template-create-save-bar");
+    const response = await CreateUserTemplate({
+      server: server as string,
+      shop: shop as string,
+      templateData: updateData.content,
+      templateDescription: updateData.description,
+      templateTitle: updateData.name,
+      templateType: "",
+      templateModel: updateData.pageType,
+      templateSubtype: updateData.contentType,
+    });
+    if (response.success) {
+      shopify.saveBar.hide("template-create-save-bar");
+      shopify.toast.show("Template created successfully");
+      navigate("/app/template");
+    } else {
+      shopify.toast.show(response?.message);
+      // setError(response.message);
+    }
   };
 
   const handleDiscard = () => {
@@ -217,26 +234,26 @@ const Index = () => {
     [options],
   );
 
-  const handleLoadMoreResults = useCallback(() => {
-    if (willLoadMoreResults && endCursor) {
-      setLoading(true);
-      if (updateData.pageType === "product") {
-        setTimeout(() => {
-          fetcher.submit(
-            { endCursor: endCursor },
-            { method: "POST", action: "/getProductInfo" },
-          );
-        }, 1000);
-      } else {
-        setTimeout(() => {
-          fetcher.submit(
-            { endCursor: endCursor },
-            { method: "POST", action: "/getCollectionInfo" },
-          );
-        }, 1000);
-      }
-    }
-  }, [willLoadMoreResults, endCursor, options.length, updateData.pageType]);
+  // const handleLoadMoreResults = useCallback(() => {
+  //   if (willLoadMoreResults && endCursor) {
+  //     setLoading(true);
+  //     if (updateData.pageType === "product") {
+  //       setTimeout(() => {
+  //         fetcher.submit(
+  //           { endCursor: endCursor },
+  //           { method: "POST", action: "/getProductInfo" },
+  //         );
+  //       }, 1000);
+  //     } else {
+  //       setTimeout(() => {
+  //         fetcher.submit(
+  //           { endCursor: endCursor },
+  //           { method: "POST", action: "/getCollectionInfo" },
+  //         );
+  //       }, 1000);
+  //     }
+  //   }
+  // }, [willLoadMoreResults, endCursor, options.length, updateData.pageType]);
 
   const handleGenerate = useCallback(async () => {
     let errors = false;
@@ -353,8 +370,8 @@ const Index = () => {
                     setUpdateData({ ...updateData, contentType: value })
                   }
                   options={[
-                    { label: "Description", value: "Description" },
-                    { label: "SEO Description", value: "SEODescription" },
+                    { label: "Description", value: "description" },
+                    { label: "SEO Description", value: "seo" },
                   ]}
                 />
               </FormLayout>

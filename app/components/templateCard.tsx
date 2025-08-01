@@ -1,4 +1,11 @@
-import { Badge, Box, Button, ButtonGroup, InlineStack, Text } from "@shopify/polaris";
+import {
+  Badge,
+  Box,
+  Button,
+  ButtonGroup,
+  InlineStack,
+  Text,
+} from "@shopify/polaris";
 import styles from "./styles.module.css";
 import { useState } from "react";
 
@@ -44,9 +51,7 @@ const TemplateCard = ({
           </Text>
         </div>
         <div className={styles.Ciwi_template_card_content_name}>
-          <Badge>
-            {type}
-          </Badge>
+          <Badge>{type}</Badge>
           <Text as="h2" variant="headingMd">
             {title}
           </Text>
@@ -74,7 +79,7 @@ const TemplateCard = ({
                 </>
               ) : (
                 <>
-                  <Button onClick={onClick}>Preview</Button>
+                  {!isSystem && <Button onClick={onClick}>Preview</Button>}
                   {isSystem ? (
                     <Button
                       variant="monochromePlain"

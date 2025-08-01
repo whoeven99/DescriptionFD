@@ -23,6 +23,7 @@ import {
   DeleteUserTemplate,
   GetAllTemplateData,
   GetTemplateByShopName,
+  PreviewExampleDataByTemplateId,
 } from "app/api/JavaServer";
 import CardSkeleton from "app/components/cardSkeleton";
 
@@ -44,8 +45,9 @@ const Index = () => {
   const [descriptionSelected, setDescriptionSelected] = useState<
     "description" | "seo"
   >("description");
-  const [templateTypeSelected, setTemplateTypeSelected] =
-    useState<string | null>(null);
+  const [templateTypeSelected, setTemplateTypeSelected] = useState<
+    string | null
+  >(null);
   const [previewModal, setPreviewModal] = useState<any>(null);
   const [popoverOneActive, setPopoverOneActive] = useState<string | null>(null);
   const [popoverTwoActive, setPopoverTwoActive] = useState<string | null>(null);
@@ -111,7 +113,6 @@ const Index = () => {
         });
         response = res?.response;
       }
-      console.log(response);
       setTemplates(response);
       setIsCardLoading(false);
     };
@@ -157,9 +158,7 @@ const Index = () => {
     });
     if (response.success) {
       shopify.toast.show("Template deleted successfully");
-      setTemplates(
-        templates.filter((item: any) => item.id !== id),
-      );
+      setTemplates(templates.filter((item: any) => item.id !== id));
     }
     setButtonLoading(buttonLoading.filter((id) => id !== id));
   };
@@ -182,21 +181,30 @@ const Index = () => {
     setPopoverTwoActive(null);
   };
 
-  const handleMainTabChange = useCallback(
-    (selectedTabIndex: number) => {
-      setTemplates([]);
-      setMainSelected(selectedTabIndex);
-    },
-    [],
-  );
+  const handleMainTabChange = useCallback((selectedTabIndex: number) => {
+    setTemplates([]);
+    setMainSelected(selectedTabIndex);
+  }, []);
 
   const handleSecondaryTabChange = useCallback(
     (selectedTabIndex: number) => setSecondarySelected(selectedTabIndex),
     [],
   );
 
-  const handlePreview = (template: any) => {
-    setPreviewModal(template);
+  const handlePreview = async (template: any) => {
+    console.log("template:", template);
+    const response = await PreviewExampleDataByTemplateId({
+      server: server as string,
+      shop: shop as string,
+      templateId: template.id,
+    });
+
+    console.log("response:", response);
+
+    setPreviewModal({
+      ...template,
+      templateData: response?.response,
+    });
     shopify.modal.show("preview-modal");
   };
 
@@ -243,12 +251,12 @@ const Index = () => {
       title="Template"
       subtitle="Customize and organize your content generation templates"
       compactTitle
-      // primaryAction={{
-      //   content: "Create template",
-      //   onAction: () => {
-      //     navigate("/app/template/create");
-      //   },
-      // }}
+      primaryAction={{
+        content: "Create template",
+        onAction: () => {
+          navigate("/app/template/create");
+        },
+      }}
     >
       {isLoading ? (
         <CardSkeleton height="500px" />
@@ -686,7 +694,7 @@ const Index = () => {
         <Box padding="400">
           <div
             dangerouslySetInnerHTML={{
-              __html: previewModal?.templateData.replace(/\n/g, "<br/>"),
+              __html: previewModal?.templateData,
             }}
           />
         </Box>

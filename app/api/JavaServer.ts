@@ -107,6 +107,16 @@ export const GenerateDescription = async ({
         },
       };
     }
+    // return{
+    //   success: true,
+    //   error: null,
+    //   errorMsg: null,
+    //   response: {
+    //     description: "test",
+    //     pageType: pageType,
+    //     contentType: contentType,
+    //   },
+    // };
     return response.data;
   } catch (error) {
     console.log(error);
@@ -149,21 +159,6 @@ export const BatchGenerateDescription = async ({
   brandSlogan?: string;
 }) => {
   try {
-    console.log("data:", {
-      productIds: productIds,
-      textTone: languageStyle,
-      brandTone: brandStyle,
-      templateId: templateId,
-      templateType: templateType,
-      model: model,
-      language: language,
-      seoKeywords: seoKeywords,
-      brandWord: brandWord,
-      brandSlogan: brandSlogan,
-      pageType: pageType,
-      contentType: contentType,
-    });
-
     const response = await axios.put(
       `${process.env.SERVER_URL}/apg/userGeneratedTask/batchGenerateDescription?shopName=${shop}`,
       {
@@ -417,6 +412,147 @@ export const StopBatchGenerateDescription = async ({
     return {
       success: false,
       message: "Error StopBatchGenerateDescription",
+    };
+  }
+};
+
+export const CreateUserTemplate = async ({
+  server,
+  shop,
+  templateData,
+  templateDescription,
+  templateTitle,
+  templateType = "",
+  templateModel,
+  templateSubtype,
+}: {
+  server: string;
+  shop: string;
+  templateData: string;
+  templateDescription: string;
+  templateTitle: string;
+  templateType: string;
+  templateModel: string;
+  templateSubtype: string;
+}) => {
+  try {
+    const response = await axios.post(
+      `${server}/apg/template/createUserTemplate?shopName=${shop}`,
+      {
+        templateData: templateData,
+        templateDescription: templateDescription,
+        templateTitle: templateTitle,
+        templateType: templateType,
+        templateModel: templateModel,
+        templateSubtype: templateSubtype,
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
+      message: "Error CreateUserTemplate",
+    };
+  }
+};
+
+export const PreviewExampleDataByTemplateId = async ({
+  server,
+  shop,
+  templateId,
+}: {
+  server: string;
+  shop: string;
+  templateId: number;
+}) => {
+  try {
+    const response = await axios.get(
+      `${server}/apg/template/previewExampleDataByTemplateId?shopName=${shop}&templateId=${templateId}`,
+    );
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
+      message: "Error PreviewExampleDataByTemplateId",
+    };
+  }
+};
+
+export const GetUserCounter = async ({
+  server,
+  shop,
+}: {
+  server: string;
+  shop: string;
+}) => {
+  try {
+    const response = await axios.post(
+      `${server}/apg/userCounter/getUserCounter?shopName=${shop}`,
+    );
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
+      message: "Error GetUserCounter",
+    };
+  }
+};
+
+export const InsertOrUpdateOrder = async ({
+  shop,
+  amount,
+  name,
+  createdAt,
+  status,
+  confirmationUrl,
+}: {
+  shop: string;
+  amount: number;
+  name: string;
+  createdAt: Date;
+  status: string;
+  confirmationUrl: string;
+}) => {
+  try {
+    const response = await axios.post(
+      `${process.env.SERVER_URL}/apg/orders/insertOrUpdateOrder?shopName=${shop}`,
+      {
+        amount: amount,
+        name: name,
+        createdAt: createdAt,
+        status: status,
+        confirmationUrl: confirmationUrl,
+      },
+    );
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
+      message: "Error GetUserCounter",
+    };
+  }
+};
+export const UpdateUserToken = async ({
+  shop,
+  token,
+}: {
+  shop: string;
+  token: number;
+}) => {
+  try {
+    const response = await axios.put(
+      `${process.env.SERVER_URL}/apg/userCounter/updateUserToken?shopName=${shop}&token=${token}`,
+    );
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
+      message: "Error UpdateUserToken",
     };
   }
 };

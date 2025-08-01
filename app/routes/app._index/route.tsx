@@ -31,6 +31,7 @@ import "react-quill/dist/quill.snow.css";
 import styles from "../styles/styles.module.css";
 import { authenticate } from "app/shopify.server";
 import { GenerateDescription, GetTemplateByShopName } from "app/api/JavaServer";
+import { Modal, TitleBar } from "@shopify/app-bridge-react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const adminAuthResult = await authenticate.admin(request);
@@ -98,12 +99,16 @@ const Index = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [modelPopoverActive, setModelPopoverActive] = useState(false);
+  const [open, setOpen] = useState(false);
   const [seoKeywordError, setSeoKeywordError] = useState("");
   const [productError, setProductError] = useState("");
+  const [originalDescription, setOriginalDescription] = useState<any>(null);
   const [originalData, setOriginalData] = useState<any>(null);
   const [editedData, setEditedData] = useState<any>(null);
   const [templates, setTemplates] = useState<any>([]);
+  const [currentTipIndex, setCurrentTipIndex] = useState<number>(0);
 
+  const tipIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstLoad = useRef(true);
 
   // const filterTemplates = useMemo(() => {
@@ -124,6 +129,16 @@ const Index = () => {
 
   //   return allTemplates;
   // }, [pageType, contentType, templates]);
+
+  const tipTexts = useMemo(
+    () => [
+      "Generated content will appear here",
+      "Each product takes about 10-20 seconds to create...",
+      "Syncing outline to AI model",
+      "AI big models are returning content",
+    ],
+    [],
+  );
 
   const brandStyleOptions = useMemo(
     () => [
@@ -340,6 +355,7 @@ const Index = () => {
   const productInfoFetcher = useFetcher<any>();
   const shopOwnerNameFetcher = useFetcher<any>();
   const publishFetcher = useFetcher<any>();
+  const originalDescriptionFetcher = useFetcher<any>();
 
   useEffect(() => {
     const shopOwnerName = localStorage.getItem("shopOwnerName");
@@ -352,6 +368,15 @@ const Index = () => {
       );
     }
     // setLoading(false);
+  }, []);
+
+  // 添加清理定时器的useEffect
+  useEffect(() => {
+    return () => {
+      if (tipIntervalRef.current) {
+        clearInterval(tipIntervalRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -422,13 +447,8 @@ const Index = () => {
         pageType: pageType,
         contentType: contentType,
       });
-      // if (response.success) {
       setTemplates(response);
       setTemplate(response[0].id.toString());
-      //   setTemplate(response.response[0].id.toString());
-      // } else {
-      //   setTemplates(null);
-      // }
     };
     fetchTemplates();
   }, [pageType, contentType]);
@@ -457,6 +477,7 @@ const Index = () => {
               <Thumbnail
                 source={item.image || "/img_default-min.webp"}
                 alt={item.title}
+                size="small"
               />
             ),
           })),
@@ -532,6 +553,18 @@ const Index = () => {
       shopify.toast.show("Description published successfully");
     }
   }, [publishFetcher.data]);
+
+  useEffect(() => {
+    if (originalDescriptionFetcher.data) {
+      if (originalDescriptionFetcher.data.success) {
+        setOriginalDescription(
+          originalDescriptionFetcher.data.response.descriptionHtml,
+        );
+      } else {
+        shopify.toast.show("Failed to get original description");
+      }
+    }
+  }, [originalDescriptionFetcher.data]);
 
   const updateSelection = useCallback(
     (selected: string[]) => {
@@ -687,8 +720,14 @@ const Index = () => {
       return;
     }
     setIsGenerating(true);
+    startTipTimer(); // 开始定时器
 
-    console.log("template", template);
+    originalDescriptionFetcher.submit(
+      {
+        productId: selectedOptions[0],
+      },
+      { method: "POST", action: "/getProductInfoById" },
+    );
 
     const response = await GenerateDescription({
       server: server as string,
@@ -708,7 +747,7 @@ const Index = () => {
     });
     if (response.success) {
       setIsGenerating(false);
-      console.log(response.response);
+      stopTipTimer(); // 停止定时器
       setEditedData(response.response);
       setOriginalData(response.response);
       // if (
@@ -746,22 +785,26 @@ const Index = () => {
       // }
     } else {
       setIsGenerating(false);
+      stopTipTimer(); // 停止定时器
       shopify.toast.show("Failed to generate description");
     }
   };
 
-  //   return loading ? (
-  //     <div
-  //       style={{
-  //         display: "flex",
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //         height: "100vh",
-  //       }}
-  //     >
-  //       <Spinner />
-  //     </div>
-  //   ) : (
+  const startTipTimer = useCallback(() => {
+    setCurrentTipIndex(0);
+    tipIntervalRef.current = setInterval(() => {
+      setCurrentTipIndex((prev) => (prev + 1) % tipTexts.length);
+    }, 2000);
+  }, [tipTexts.length]);
+
+  const stopTipTimer = useCallback(() => {
+    if (tipIntervalRef.current) {
+      clearInterval(tipIntervalRef.current);
+      tipIntervalRef.current = null;
+    }
+    setCurrentTipIndex(0);
+  }, []);
+
   return (
     <Page
       title={`Hi ${shopOwnerName}!`}
@@ -866,10 +909,13 @@ const Index = () => {
                         />
                         <Select
                           label="Template"
-                          options={templates?.map((template: any) => ({
-                            label: template.templateTitle,
-                            value: template.id.toString(),
-                          }))}
+                          options={templates?.map(
+                            (template: any, index: number) => ({
+                              key: index.toString(),
+                              label: template.templateTitle,
+                              value: template.id.toString(),
+                            }),
+                          )}
                           value={template}
                           onChange={(value) => handleTemplateChange(value)}
                         />
@@ -1426,98 +1472,124 @@ const Index = () => {
                   <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 8 }}>
                     <div
                       className={
-                        styles.Ciwi_QuickGenerator_Result +
+                        styles.Ciwi_QuickGenerator_Container +
                         " " +
                         (editedData && !isEdit ? styles.hasResult : "") +
                         " " +
-                        (isEdit ? styles.isEdit : "")
+                        (editedData && isEdit ? styles.isEdit : "")
                       }
                     >
-                      {!editedData && !isGenerating ? (
-                        <div
-                          className={styles.Ciwi_QuickGenerator_Result_Empty}
-                        >
-                          <Text as="p" variant="bodyMd">
-                            Generated content will appear here
-                          </Text>
+                      {/* {editedData ? (
+                        <div className={styles.Ciwi_QuickGenerator_Report}>
+                          11111111
                         </div>
-                      ) : null}
-                      {isGenerating ? (
+                      ) : null} */}
+                      <div
+                        className={
+                          styles.Ciwi_QuickGenerator_Result +
+                          " " +
+                          (!editedData ? styles.defaultStatus : "") +
+                          " " +
+                          (editedData && isEdit
+                            ? styles.Ciwi_QuickGenerator_Result_Content_Edit
+                            : "")
+                        }
+                      >
+                        {!editedData ? (
+                          <div
+                            className={styles.Ciwi_QuickGenerator_Result_Empty}
+                          >
+                            <Text as="p" variant="bodyMd">
+                              {tipTexts[currentTipIndex]}
+                            </Text>
+                          </div>
+                        ) : null}
+                        {/* {isGenerating ? (
                         <div
                           className={styles.Ciwi_QuickGenerator_Result_Loading}
                         >
                           <SkeletonBodyText lines={10} />
                         </div>
-                      ) : null}
-                      {editedData && !isGenerating ? (
-                        <div
-                          className={styles.Ciwi_QuickGenerator_Result_Content}
-                        >
-                          {isEdit ? (
-                            <div
-                              className={
-                                styles.Ciwi_QuickGenerator_Result_Editor
-                              }
-                            >
-                              <ReactQuill
-                                value={editedData.description}
-                                onChange={(value) =>
-                                  setEditedData({
-                                    ...editedData,
-                                    description: value,
-                                  })
-                                }
-                                style={{ height: "850px" }}
-                              />
-                            </div>
-                          ) : (
-                            <div
-                              className={
-                                styles.Ciwi_QuickGenerator_Result_Markdown
-                              }
-                            >
-                              <div
-                                dangerouslySetInnerHTML={{
-                                  __html: editedData.description,
-                                }}
-                              />
-                            </div>
-                          )}
+                      ) : null} */}
+                        {editedData ? (
                           <div
                             className={
-                              styles.Ciwi_QuickGenerator_Result_Feedback +
-                              " " +
-                              (isEdit ? styles.Edit_Button : "")
+                              styles.Ciwi_QuickGenerator_Result_Content
                             }
                           >
                             {isEdit ? (
-                              <ButtonGroup>
-                                <Button onClick={handleConfirm}>Confirm</Button>
-                                <Button onClick={handleCancel}>Cancel</Button>
-                              </ButtonGroup>
+                              <div
+                                className={
+                                  styles.Ciwi_QuickGenerator_Result_Editor
+                                }
+                              >
+                                <ReactQuill
+                                  value={editedData?.description || "<p></p>"}
+                                  onChange={(value) => {
+                                    setEditedData({
+                                      ...editedData,
+                                      description: value,
+                                    });
+                                  }}
+                                  style={{ height: "900px" }}
+                                />
+                              </div>
                             ) : (
-                              <>
-                                <ButtonGroup>
-                                  <Button
-                                    onClick={handlePublish}
-                                    loading={
-                                      publishFetcher.state === "submitting"
-                                    }
-                                  >
-                                    Publish
-                                  </Button>
-                                  <Button onClick={handleEdit}>Edit</Button>
-                                </ButtonGroup>
-                                {/* <InlineStack gap="100">
-                                                                    <Button icon={ClipboardIcon} variant="tertiary" />
-                                                                    <Button icon={ThumbsUpIcon} variant="tertiary" />
-                                                                    <Button icon={ThumbsDownIcon} variant="tertiary" />
-                                                                </InlineStack> */}
-                              </>
+                              <div
+                                className={
+                                  styles.Ciwi_QuickGenerator_Result_Markdown
+                                }
+                              >
+                                <div
+                                  dangerouslySetInnerHTML={{
+                                    __html: editedData?.description || "",
+                                  }}
+                                />
+                              </div>
                             )}
+                            <div
+                              className={
+                                styles.Ciwi_QuickGenerator_Result_Feedback +
+                                " " +
+                                (isEdit ? styles.Edit_Button : "")
+                              }
+                            >
+                              {isEdit ? (
+                                <Button onClick={handleConfirm}>Confirm</Button>
+                              ) : (
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    width: "100%",
+                                  }}
+                                >
+                                  <Button
+                                    variant="tertiary"
+                                    onClick={() => {
+                                      setOpen(true);
+                                    }}
+                                  >
+                                    View original description
+                                  </Button>
+                                  <ButtonGroup>
+                                    <Button
+                                      onClick={handlePublish}
+                                      loading={
+                                        publishFetcher.state === "submitting"
+                                      }
+                                    >
+                                      Publish
+                                    </Button>
+                                    <Button onClick={handleEdit}>Edit</Button>
+                                  </ButtonGroup>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ) : null}
+                        ) : null}
+                      </div>
                     </div>
                   </Grid.Cell>
                 </Grid>
@@ -1535,9 +1607,20 @@ const Index = () => {
           </Layout.Section>
         </Layout>
       </BlockStack>
+      <Modal open={open} variant="large" onHide={() => setOpen(false)}>
+        <TitleBar title={`Original description`}>
+          <button onClick={() => setOpen(false)}>Close</button>
+        </TitleBar>
+        <Box padding="400">
+          <div
+            dangerouslySetInnerHTML={{
+              __html: originalDescription,
+            }}
+          />
+        </Box>
+      </Modal>
     </Page>
   );
-  //   );
 };
 
 export const removeHtmlTags = (str: string) => {
