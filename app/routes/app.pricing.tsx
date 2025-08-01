@@ -2,6 +2,7 @@ import {
   BlockStack,
   Box,
   Button,
+  ButtonGroup,
   Card,
   Grid,
   InlineStack,
@@ -206,18 +207,27 @@ const Index = () => {
           <Card>
             <BlockStack gap="400">
               <InlineStack gap="200">
-                <Text variant="headingXl" as="h2">
-                  Your Credits
+                <Text variant="headingLg" as="h2">
+                  Your Balance
                 </Text>
               </InlineStack>
               <InlineStack gap="200">
                 <CardSkeleton height="20px" active={loading}>
-                  <Text variant="bodyMd" as="p" fontWeight="bold">
-                    {usedCredits} has been used, total credits:{maxCredits}.
-                  </Text>
+                  <InlineStack gap="100">
+                    <Text variant="bodyMd" as="p" fontWeight="bold">
+                      {usedCredits.toLocaleString()}
+                    </Text>
+                    <Text variant="bodyMd" as="p">
+                      has been used, total credits:
+                    </Text>
+                    <Text variant="bodyMd" as="p" fontWeight="bold">
+                      {maxCredits.toLocaleString()}.
+                    </Text>
+                  </InlineStack>
                 </CardSkeleton>
               </InlineStack>
               <ProgressBar
+                size="small"
                 progress={
                   usedCredits && maxCredits
                     ? (usedCredits / maxCredits) * 100
@@ -231,7 +241,7 @@ const Index = () => {
           <Card>
             <BlockStack gap="400">
               <InlineStack gap="200">
-                <Text variant="headingXl" as="h2">
+                <Text variant="headingLg" as="h2">
                   Buy Credits
                 </Text>
               </InlineStack>
@@ -295,12 +305,7 @@ const Index = () => {
                   />
                 </Grid.Cell>
               </Grid>
-              <Text
-                variant="bodyMd"
-                as="p"
-                fontWeight="bold"
-                alignment="center"
-              >
+              <Text variant="bodyMd" as="p" alignment="center">
                 Total pay: $
                 {selectedOption ? selectedOption.price.toFixed(2) : "0.00"}
               </Text>
@@ -311,15 +316,19 @@ const Index = () => {
               >
                 {t("Credits Calculator")}
               </Button> */}
-              <Button
-                variant="primary"
-                // size="large"
-                disabled={!selectedOption}
-                loading={payFetcher.state === "submitting"}
-                onClick={handlePay}
-              >
-                Buy now
-              </Button>
+              <InlineStack align="center">
+                <ButtonGroup>
+                  <Button
+                    variant="primary"
+                    // size="large"
+                    disabled={!selectedOption}
+                    loading={payFetcher.state === "submitting"}
+                    onClick={handlePay}
+                  >
+                    Buy now
+                  </Button>
+                </ButtonGroup>
+              </InlineStack>
             </BlockStack>
           </Card>
         </Layout.Section>
@@ -359,10 +368,10 @@ const PricingCard = ({
         borderWidth="025"
       >
         <BlockStack align="center" inlineAlign="center" gap="400">
-          <Text variant="headingLg" as="p">
+          <Text variant="bodyLg" as="p">
             {option.label} Credits
           </Text>
-          <Text variant="bodyLg" as="p">
+          <Text variant="headingLg" as="p">
             ${option.price}
           </Text>
         </BlockStack>
