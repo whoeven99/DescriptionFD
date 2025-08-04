@@ -101,7 +101,17 @@ export const GenerateDescription = async ({
       return {
         ...response.data,
         response: {
-          description: response.data.response.replace(/\n/g, "<br/>"),
+          wordCount: response.data.response.wordCount,
+          wordGap: response.data.response.wordGap || 25,
+          keywordStrong: response.data.response.keywordStrong,
+          keywordPercent: response.data.response.keywordPercent,
+          keywordCompare: response.data.response.keywordCompare,
+          textPercent: response.data.response.textPercent,
+          ctrIncrease: response.data.response.ctrIncrease,
+          description: response.data.response.generateText.replace(
+            /\n/g,
+            "<br/>",
+          ),
           pageType: pageType,
           contentType: contentType,
         },

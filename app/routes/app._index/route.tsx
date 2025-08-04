@@ -746,6 +746,7 @@ const Index = () => {
       brandSlogan: brandSlogan || "",
     });
     if (response.success) {
+      console.log(response.response);
       setIsGenerating(false);
       stopTipTimer(); // 停止定时器
       setEditedData(response.response);
@@ -1479,11 +1480,34 @@ const Index = () => {
                         (editedData && isEdit ? styles.isEdit : "")
                       }
                     >
-                      {/* {editedData ? (
+                      {editedData ? (
                         <div className={styles.Ciwi_QuickGenerator_Report}>
-                          11111111
+                          <BlockStack>
+                            <Text variant="bodyMd" as="p">
+                              Text optimization analysis
+                            </Text>
+                            <Text variant="bodyMd" as="p">
+                              Text content: {editedData.wordCount} words added,{" "}
+                              {editedData.wordGap.toFixed(2) * 100}% incre
+                             ase over previous
+                            </Text>
+                            <Text variant="bodyMd" as="p">
+                              Keyword density: The head keyword is{" "}
+                              {editedData.keywordStrong || ""}, with a density
+                              of {editedData.keywordPercent}%, which is +
+                              {editedData.keywordCompare}% higher than before
+                            </Text>
+                            <Text variant="bodyMd" as="p">
+                              Content richness: Content richness increased by{" "}
+                              {editedData.textPercent}%, meeting SEO standards
+                            </Text>
+                            <Text variant="bodyMd" as="p">
+                              Expected conversion rate increase:{" "}
+                              {editedData.ctrIncrease}%
+                            </Text>
+                          </BlockStack>
                         </div>
-                      ) : null} */}
+                      ) : null}
                       <div
                         className={
                           styles.Ciwi_QuickGenerator_Result +
