@@ -1,8 +1,6 @@
-// import { Button } from "@arco-design/web-react";
-import "@arco-design/web-react/dist/css/arco.css";
 import { useEditorState } from "@tiptap/react";
 import { CodeIcon, TextBoldIcon, TextItalicIcon } from "@shopify/polaris-icons";
-import "./assets//css/commands.css";
+import "./styles/commands.css";
 import { useState, useEffect, useRef } from "react";
 import Typography from "@tiptap/extension-typography";
 import TableMenu from "./components/TableMenu";

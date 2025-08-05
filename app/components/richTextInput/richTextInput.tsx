@@ -2,7 +2,7 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 // import { FloatingMenu, BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from "@tiptap/starter-kit";
-import "./assets//css/tiptap.css";
+import "./styles/tiptap.css";
 import { Commands } from "./commands";
 // import Underline from '@tiptap/extension-underline'
 import { TextStyle } from "@tiptap/extension-text-style";

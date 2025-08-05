@@ -1,6 +1,6 @@
 // components/LocalImageUpload.tsx
-import { Button } from '@arco-design/web-react';
-import { IconImage } from '@arco-design/web-react/icon';
+import { Button } from '@shopify/polaris';
+import { ImageIcon } from '@shopify/polaris-icons';
 import React, { useRef } from 'react';
 
 export default function LocalImageUpload({ editor }: { editor: any }) {
@@ -30,10 +30,9 @@ export default function LocalImageUpload({ editor }: { editor: any }) {
   return (
     <>
       <Button
-        type="text"
+        icon={ImageIcon}
         onClick={() => fileInputRef.current?.click()}
       >
-        <IconImage />
       </Button>
       <input
         type="file"
