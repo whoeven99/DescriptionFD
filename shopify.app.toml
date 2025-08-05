@@ -1,8 +1,8 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "b56a502400fe53e1f4cdfdb684929d2b"
-name = "Ciwi.ai:Product Description"
-handle = "ciwi-ai-ai-product"
+client_id = "ade848cd9472eb0f027309f702e2b68a"
+name = "Ciwi.ai:PD(Local)"
+handle = "ciwi-ai-pdlocal"
 application_url = "https://bb98b516b4e9.ngrok.app"
 embedded = true
 
