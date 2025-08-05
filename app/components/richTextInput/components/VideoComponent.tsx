@@ -33,22 +33,22 @@ const VideoComponent = forwardRef(({ onInsert }: VideoComponentProps, ref) => {
     <Modal
       open={active} // Polaris 用 open 控制显示
       onClose={handleClose}
-      title="插入视频"
+      title="insert video"
       primaryAction={{
-        content: '确认',
+        content: 'confirm',
         onAction: handleOk,
       }}
       secondaryActions={[
         {
-          content: '取消',
+          content: 'cancel',
           onAction: handleClose,
         },
       ]}
     >
       <Modal.Section>
         <TextField
-          label="视频链接"
-          placeholder="请输入 iframe 视频链接"
+          label="video link"
+          placeholder="Please enter the iframe video link"
           value={videoUrl}
           onChange={(value) => setVideoUrl(value)}
           autoComplete="off"

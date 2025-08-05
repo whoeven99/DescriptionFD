@@ -27,17 +27,17 @@ export const AlignText: React.FC<AlignTextProps> = ({ editor }) => {
 
   const actions = [
     {
-      content: '左对齐',
+      content: 'Left Align',
       icon: TextAlignLeftIcon,
       onAction: () => handleAlignClick('left'),
     },
     {
-      content: '居中对齐',
+      content: 'Left Center',
       icon: TextAlignCenterIcon,
       onAction: () => handleAlignClick('center'),
     },
     {
-      content: '右对齐',
+      content: 'Left Right',
       icon: TextAlignRightIcon,
       onAction: () => handleAlignClick('right'),
     },
@@ -55,6 +55,7 @@ export const AlignText: React.FC<AlignTextProps> = ({ editor }) => {
       active={active}
       activator={
         <Button
+          variant="tertiary"
           icon={<Icon source={currentIcon} />}
           onClick={toggleActive}
           size="slim"

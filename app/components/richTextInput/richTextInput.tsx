@@ -36,6 +36,7 @@ const Tiptap = () => {
         types: ["heading", "paragraph"], // 指定允许设置对齐的节点类型
       }),
       Video,
+      // Underline
     ], // define your extension array
     content: "<p>Hello World!</p>", // initial content
   });

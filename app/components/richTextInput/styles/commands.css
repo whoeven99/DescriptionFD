@@ -1,7 +1,9 @@
 .commands {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex-direction: row;
+  gap: 20px;
+  align-items: center;
+  padding-top: 30px;
 }
 
 .ProseMirror iframe {
