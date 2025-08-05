@@ -1,0 +1,7 @@
+.tiptap {
+    outline: none !important;
+    /* border: none !important; */
+    box-shadow: none !important;
+    border: 1px solid #ddd;
+    max-width: 1200px;
+}
