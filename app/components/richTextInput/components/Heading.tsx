@@ -24,13 +24,13 @@ export default function HeadingMenu({ editor,disabled }: HeadingMenuProps) {
   const editorState = useEditorState({
     editor,
     selector: (ctx) => ({
-      isParagraph: ctx.editor.isActive('paragraph') ?? false,
-      isHeading1: ctx.editor.isActive('heading', { level: 1 }) ?? false,
-      isHeading2: ctx.editor.isActive('heading', { level: 2 }) ?? false,
-      isHeading3: ctx.editor.isActive('heading', { level: 3 }) ?? false,
-      isHeading4: ctx.editor.isActive('heading', { level: 4 }) ?? false,
-      isHeading5: ctx.editor.isActive('heading', { level: 5 }) ?? false,
-      isHeading6: ctx.editor.isActive('heading', { level: 6 }) ?? false,
+      isParagraph: ctx.editor?.isActive('paragraph') ?? false,
+      isHeading1: ctx.editor?.isActive('heading', { level: 1 }) ?? false,
+      isHeading2: ctx.editor?.isActive('heading', { level: 2 }) ?? false,
+      isHeading3: ctx.editor?.isActive('heading', { level: 3 }) ?? false,
+      isHeading4: ctx.editor?.isActive('heading', { level: 4 }) ?? false,
+      isHeading5: ctx.editor?.isActive('heading', { level: 5 }) ?? false,
+      isHeading6: ctx.editor?.isActive('heading', { level: 6 }) ?? false,
     }),
   });
 

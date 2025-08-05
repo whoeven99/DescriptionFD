@@ -19,7 +19,7 @@ import { Video } from "./extensions/VideoNode";
 import { LocalImage } from "./extensions/imageNode";
 import { useState } from "react";
 const Tiptap = () => {
-  const editor = useEditor({
+  const editor = useEditor({  
     extensions: [
       StarterKit,
       TextStyle,
@@ -39,6 +39,7 @@ const Tiptap = () => {
       // Underline
     ], // define your extension array
     content: "<p>Hello World!</p>", // initial content
+    immediatelyRender: false, // 🔹 SSR 环境下必须加这个
   });
   const [showTiptap, setShowTiptap] = useState(true);
   const hideTiptap = (value: boolean) => {
@@ -47,7 +48,7 @@ const Tiptap = () => {
   };
   return (
     <div className="tiptap-content">
-      <Commands editor={editor} handleTiptap={hideTiptap} />
+      {editor &&<Commands editor={editor} handleTiptap={hideTiptap} />}
       {showTiptap && <EditorContent editor={editor} />}
       {/* <FloatingMenu editor={editor}>This is the floating menu</FloatingMenu> */}
       {/* <BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu> */}
