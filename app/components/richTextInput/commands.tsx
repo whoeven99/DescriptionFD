@@ -29,18 +29,18 @@ const Commands = ({ editor, handleTiptap }: any) => {
   const editorState = useEditorState({
     editor,
     selector: (ctx) => ({
-      isBold: ctx.editor.isActive("bold") ?? false,
+      isBold: ctx.editor?.isActive("bold") ?? false,
       canBold: ctx.editor.can().chain().toggleBold().run() ?? false,
-      isItalic: ctx.editor.isActive("italic") ?? false,
+      isItalic: ctx.editor?.isActive("italic") ?? false,
       canItalic: ctx.editor.can().chain().toggleItalic().run() ?? false,
       canUnderline: ctx.editor.can().chain().toggleUnderline().run() ?? false,
-      isParagraph: ctx.editor.isActive("paragraph") ?? false,
-      isHeading1: ctx.editor.isActive("heading", { level: 1 }) ?? false,
-      isHeading2: ctx.editor.isActive("heading", { level: 2 }) ?? false,
-      isHeading3: ctx.editor.isActive("heading", { level: 3 }) ?? false,
-      isHeading4: ctx.editor.isActive("heading", { level: 4 }) ?? false,
-      isHeading5: ctx.editor.isActive("heading", { level: 5 }) ?? false,
-      isHeading6: ctx.editor.isActive("heading", { level: 6 }) ?? false,
+      isParagraph: ctx.editor?.isActive("paragraph") ?? false,
+      isHeading1: ctx.editor?.isActive("heading", { level: 1 }) ?? false,
+      isHeading2: ctx.editor?.isActive("heading", { level: 2 }) ?? false,
+      isHeading3: ctx.editor?.isActive("heading", { level: 3 }) ?? false,
+      isHeading4: ctx.editor?.isActive("heading", { level: 4 }) ?? false,
+      isHeading5: ctx.editor?.isActive("heading", { level: 5 }) ?? false,
+      isHeading6: ctx.editor?.isActive("heading", { level: 6 }) ?? false,
     }),
   });
 
@@ -105,7 +105,7 @@ const Commands = ({ editor, handleTiptap }: any) => {
           <Button
             variant="tertiary"
             onClick={() => editor.chain().focus().toggleBold().run()}
-            disabled={!editorState.canBold || isHtmlMode}
+            disabled={!editor || !editorState.canBold || isHtmlMode}
             icon={TextBoldIcon}
           />
         </Tooltip>
@@ -113,7 +113,7 @@ const Commands = ({ editor, handleTiptap }: any) => {
           <Button
             variant="tertiary"
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            disabled={!editorState.canItalic || isHtmlMode}
+            disabled={!editor || !editorState.canItalic || isHtmlMode}
             icon={TextItalicIcon}
           />
         </Tooltip>
@@ -121,7 +121,7 @@ const Commands = ({ editor, handleTiptap }: any) => {
           <Button
             variant="tertiary"
             onClick={() => editor.chain().focus().toggleUnderline().run()}
-            disabled={!editorState.canUnderline || isHtmlMode}
+            disabled={!editor || !editorState.canUnderline || isHtmlMode}
             icon={TextUnderlineIcon}
           />
         </Tooltip>
