@@ -1,23 +1,27 @@
-import { Modal, Input } from '@arco-design/web-react';
 import React, { useState, useImperativeHandle, forwardRef } from 'react';
+import { Modal, TextField } from '@shopify/polaris';
 
 interface VideoComponentProps {
   onInsert: (url: string) => void;
 }
 
 const VideoComponent = forwardRef(({ onInsert }: VideoComponentProps, ref) => {
-  const [visible, setVisible] = useState(false);
+  const [active, setActive] = useState(false); // Polaris用active控制显示
   const [videoUrl, setVideoUrl] = useState('');
 
   const openModal = () => {
     setVideoUrl('');
-    setVisible(true);
+    setActive(true);
+  };
+
+  const handleClose = () => {
+    setActive(false);
   };
 
   const handleOk = () => {
-    if (videoUrl) {
-      onInsert(videoUrl);
-      setVisible(false);
+    if (videoUrl.trim()) {
+      onInsert(videoUrl.trim());
+      setActive(false);
     }
   };
 
@@ -27,18 +31,29 @@ const VideoComponent = forwardRef(({ onInsert }: VideoComponentProps, ref) => {
 
   return (
     <Modal
-      title="插入视频"
-      visible={visible}
-      onOk={handleOk}
-      onCancel={() => setVisible(false)}
-      okText="确认"
-      cancelText="取消"
+      open={active} // Polaris 用 open 控制显示
+      onClose={handleClose}
+      title="insert video"
+      primaryAction={{
+        content: 'confirm',
+        onAction: handleOk,
+      }}
+      secondaryActions={[
+        {
+          content: 'cancel',
+          onAction: handleClose,
+        },
+      ]}
     >
-      <Input
-        placeholder="请输入 iframe 视频链接"
-        value={videoUrl}
-        onChange={setVideoUrl}
-      />
+      <Modal.Section>
+        <TextField
+          label="video link"
+          placeholder="Please enter the iframe video link"
+          value={videoUrl}
+          onChange={(value) => setVideoUrl(value)}
+          autoComplete="off"
+        />
+      </Modal.Section>
     </Modal>
   );
 });

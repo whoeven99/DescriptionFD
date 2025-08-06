@@ -1,9 +1,9 @@
 // components/LocalImageUpload.tsx
-import { Button } from '@arco-design/web-react';
-import { IconImage } from '@arco-design/web-react/icon';
+import { Button } from '@shopify/polaris';
+import { ImageIcon } from '@shopify/polaris-icons';
 import React, { useRef } from 'react';
 
-export default function LocalImageUpload({ editor }: { editor: any }) {
+export default function LocalImageUpload({ editor,disabled }: { editor: any,disabled:boolean }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -12,7 +12,7 @@ export default function LocalImageUpload({ editor }: { editor: any }) {
 
     // 只接受图片
     if (!file.type.startsWith('image/')) {
-      alert('请选择图片文件');
+      alert('Please select an image file');
       return;
     }
 
@@ -30,10 +30,11 @@ export default function LocalImageUpload({ editor }: { editor: any }) {
   return (
     <>
       <Button
-        type="text"
+        disabled={disabled}
+        variant="tertiary"
+        icon={ImageIcon}
         onClick={() => fileInputRef.current?.click()}
       >
-        <IconImage />
       </Button>
       <input
         type="file"

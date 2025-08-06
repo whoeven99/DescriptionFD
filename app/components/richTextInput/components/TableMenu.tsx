@@ -1,45 +1,83 @@
-import { Dropdown, Button, Menu } from '@arco-design/web-react'
-import { IconApps } from '@arco-design/web-react/icon'
+import React, { useState, useCallback } from 'react';
+import { Button, Popover, ActionList, Icon } from '@shopify/polaris';
+import { DataTableIcon } from '@shopify/polaris-icons';
 
-export default function TableMenu({ editor }:any) {
-  const menuItems = [
-    { key: 'insert', content: '插入 2x2 表格' },
-    { key: 'addRow', content: '在下方插入行' },
-    { key: 'addCol', content: '在右侧插入列' },
-    { key: 'delete', content: '删除表格' },
-  ]
+interface TableMenuProps {
+  editor: any;
+  disabled: boolean;
+}
 
-  const onClickMenuItem = (key: string) => {
-    if (!editor) return
-    const chain = editor.chain().focus()
+export default function TableMenu({ editor, disabled }: TableMenuProps) {
+  const [active, setActive] = useState(false);
+
+  const toggleActive = useCallback(() => setActive((prev) => !prev), []);
+  const handleClose = useCallback(() => setActive(false), []);
+
+  const handleAction = (key: string) => {
+    if (!editor) return;
+    const chain = editor.chain().focus();
 
     switch (key) {
       case 'insert':
-        chain.insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run()
-        break
+        chain.insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run();
+        break;
       case 'addRow':
-        chain.addRowAfter().run()
-        break
+        chain.addRowAfter().run();
+        break;
       case 'addCol':
-        chain.addColumnAfter().run()
-        break
+        chain.addColumnAfter().run();
+        break;
       case 'delete':
-        chain.deleteTable().run()
-        break
+        chain.deleteTable().run();
+        break;
     }
-  }
 
-  const droplist = (
-    <Menu onClickMenuItem={onClickMenuItem}>
-      {menuItems.map((item) => (
-        <Menu.Item key={item.key}>{item.content}</Menu.Item>
-      ))}
-    </Menu>
-  )
+    setActive(false); // 点击后关闭 Popover
+  };
+
+  // 判断表格操作的可用性
+  const canAddRow = editor?.can().addRowAfter() ?? false;
+  const canAddCol = editor?.can().addColumnAfter() ?? false;
+  const canDelete = editor?.can().deleteTable() ?? false;
+
+  const actions = [
+    {
+      content: 'Insert a 2x2 table',
+      onAction: () => handleAction('insert'),
+    },
+    {
+      content: 'Insert row below',
+      onAction: () => handleAction('addRow'),
+      disabled: !canAddRow,
+    },
+    {
+      content: 'Insert column to the right',
+      onAction: () => handleAction('addCol'),
+      disabled: !canAddCol,
+    },
+    {
+      content: 'Delete a table',
+      destructive: true,
+      onAction: () => handleAction('delete'),
+      disabled: !canDelete,
+    },
+  ];
 
   return (
-    <Dropdown droplist={droplist} position="bottom">
-      <Button type="text" icon={<IconApps />} />
-    </Dropdown>
-  )
+    <Popover
+      active={active}
+      activator={
+        <Button
+          disabled={disabled}
+          variant="tertiary"
+          icon={<Icon source={DataTableIcon} />}
+          onClick={toggleActive}
+          size="slim"
+        />
+      }
+      onClose={handleClose}
+    >
+      <ActionList items={actions} />
+    </Popover>
+  );
 }
