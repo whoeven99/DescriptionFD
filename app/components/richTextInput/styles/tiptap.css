@@ -6,13 +6,17 @@
     max-width: 1200px;
     padding: 8px;
     background-color: white;
-    min-height: 200px;
+    /* min-height: 200px; */
+    height: auto;
     overflow: hidden;
+    border-radius: 0 0 10px 10px;
 }
 
 .tiptap-content {
     width: 800px;
     margin: auto;
+    border: 1px solid black;
+    border-radius: 10px;
 }
 
 
@@ -45,11 +49,12 @@
 
 
 .ProseMirror img {
-  max-width: 50%;
-  height: auto;
-  border-radius: 8px; /* 圆角 */
   display: block;
-  margin: 8px;  
+  height: auto;
+  width: auto;          /* 默认使用原始宽度 */
+  max-width: 100%;      /* 超过父容器则缩小 */
+  border-radius: 8px;   /* 圆角 */
+  margin: 8px auto  ;     
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* 阴影 */
 }
 
