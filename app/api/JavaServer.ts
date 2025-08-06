@@ -546,6 +546,7 @@ export const InsertOrUpdateOrder = async ({
     };
   }
 };
+
 export const UpdateUserToken = async ({
   shop,
   token,
@@ -563,6 +564,29 @@ export const UpdateUserToken = async ({
     return {
       success: false,
       message: "Error UpdateUserToken",
+    };
+  }
+};
+
+export const SendAPGPurchaseEmail = async ({
+  shop,
+  token,
+  amount,
+}: {
+  shop: string;
+  token: number;
+  amount: number;
+}) => {
+  try {
+    const response = await axios.post(
+      `${process.env.SERVER_URL}/apg/userCounter/sendAPGPurchaseEmail?shopName=${shop}&token=${token}&amount=${amount}`,
+    );
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
+      message: "Error SendAPGPurchaseEmail",
     };
   }
 };

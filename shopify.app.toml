@@ -3,7 +3,7 @@
 client_id = "ade848cd9472eb0f027309f702e2b68a"
 name = "Ciwi.ai:PD(Local)"
 handle = "ciwi-ai-pdlocal"
-application_url = "https://33f600cf32c6.ngrok-free.app"
+application_url = "https://bb98b516b4e9.ngrok.app"
 embedded = true
 
 [build]
@@ -15,7 +15,11 @@ dev_store_url = "quickstart-0f992326.myshopify.com"
 scopes = "read_locales,read_products,read_themes,write_products"
 
 [auth]
-redirect_urls = ["https://33f600cf32c6.ngrok-free.app/auth/callback", "https://33f600cf32c6.ngrok-free.app/auth/shopify/callback", "https://33f600cf32c6.ngrok-free.app/api/auth/callback"]
+redirect_urls = [
+  "https://bb98b516b4e9.ngrok.app/auth/callback",
+  "https://bb98b516b4e9.ngrok.app/auth/shopify/callback",
+  "https://bb98b516b4e9.ngrok.app/api/auth/callback"
+]
 
 [webhooks]
 api_version = "2025-04"

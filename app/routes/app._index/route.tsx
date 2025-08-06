@@ -1482,30 +1482,85 @@ const Index = () => {
                     >
                       {editedData ? (
                         <div className={styles.Ciwi_QuickGenerator_Report}>
-                          <BlockStack>
-                            <Text variant="bodyMd" as="p">
-                              Text optimization analysis
+                          {/* <BlockStack> */}
+                          <Text variant="bodyMd" as="p" fontWeight="bold">
+                            Text Optimization Analysis
+                          </Text>
+                          <InlineStack gap="100" align="start">
+                            <Text variant="bodyMd" as="span" fontWeight="bold">
+                              Content Length
                             </Text>
-                            <Text variant="bodyMd" as="p">
-                              Text content: {editedData.wordCount} words added,{" "}
-                              {editedData.wordGap.toFixed(2) * 100}% incre
-                             ase over previous
+                            <Text variant="bodyMd" as="span">
+                              : Increased by
+                            </Text>{" "}
+                            <Text variant="bodyMd" as="span" tone="success">
+                              {editedData.wordCount}
+                            </Text>{" "}
+                            <Text variant="bodyMd" as="span">
+                              words (
+                            </Text>{" "}
+                            <Text as="span" tone="success">
+                              {editedData.wordGap.toFixed(4) * 100}%
+                            </Text>{" "}
+                            <Text variant="bodyMd" as="span">
+                              ).
                             </Text>
-                            <Text variant="bodyMd" as="p">
-                              Keyword density: The head keyword is{" "}
-                              {editedData.keywordStrong || ""}, with a density
-                              of {editedData.keywordPercent}%, which is +
-                              {editedData.keywordCompare}% higher than before
+                          </InlineStack>
+                          {editedData.keywordStrong && (
+                            <InlineStack gap="100" align="start">
+                              <Text
+                                variant="bodyMd"
+                                as="span"
+                                fontWeight="bold"
+                              >
+                                Keyword Density
+                              </Text>
+                              <Text variant="bodyMd" as="span">
+                                : Primary Keyword
+                              </Text>{" "}
+                              <Text as="span" tone="success">
+                                "{editedData.keywordStrong || ""}",
+                              </Text>{" "}
+                              <Text variant="bodyMd" as="span">
+                                at
+                              </Text>{" "}
+                              <Text variant="bodyMd" as="span" tone="success">
+                                {editedData.keywordPercent}%,
+                              </Text>{" "}
+                              <Text variant="bodyMd" as="span" tone="success">
+                                {editedData.keywordCompare}%
+                              </Text>{" "}
+                              <Text variant="bodyMd" as="span">
+                                change.
+                              </Text>
+                            </InlineStack>
+                          )}
+                          <InlineStack gap="100" align="start">
+                            <Text variant="bodyMd" as="span" fontWeight="bold">
+                              Content Richness
                             </Text>
-                            <Text variant="bodyMd" as="p">
-                              Content richness: Content richness increased by{" "}
-                              {editedData.textPercent}%, meeting SEO standards
+                            <Text variant="bodyMd" as="span">
+                              : Improved by
+                            </Text>{" "}
+                            <Text variant="bodyMd" as="span" tone="success">
+                              {editedData.textPercent}%,
+                            </Text>{" "}
+                            <Text variant="bodyMd" as="span">
+                              meets SEO standards.
                             </Text>
-                            <Text variant="bodyMd" as="p">
-                              Expected conversion rate increase:{" "}
-                              {editedData.ctrIncrease}%
+                          </InlineStack>
+                          <InlineStack gap="100" align="start">
+                            <Text variant="bodyMd" as="span" fontWeight="bold">
+                              Conversion Rate
                             </Text>
-                          </BlockStack>
+                            <Text variant="bodyMd" as="span">
+                              : Expected increase of
+                            </Text>{" "}
+                            <Text variant="bodyMd" as="span" tone="success">
+                              {editedData.ctrIncrease}%.
+                            </Text>
+                          </InlineStack>
+                          {/* </BlockStack> */}
                         </div>
                       ) : null}
                       <div

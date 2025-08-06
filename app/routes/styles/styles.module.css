@@ -40,9 +40,9 @@
   height: 100%;
   border-radius: 16px;
   padding: 16px 16px 80px;
-  background-color: var(--p-color-bg-fill-magic-secondary);
+  background-color: var(--p-color-bg-surface);
   border: 1px solid #e3e3e3;
-  color: var(--p-color-bg-fill-magic);
+  color: currentColor;
 }
 
 .defaultStatus {
@@ -122,15 +122,11 @@
 }
 
 .Ciwi_QuickGenerator_Report {
-  height: 200px;
   border-radius: 16px;
-  padding: 16px 16px 80px;
-  background-color: var(--p-color-bg-fill-magic-secondary);
+  padding: 16px 16px;
+  background-color: var(--p-color-bg-surface);
   border: 1px solid #e3e3e3;
-  color: var(--p-color-bg-fill-magic);
-  overflow: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  color: currentColor;
 }
 
 .Ciwi_Pricing_Card {

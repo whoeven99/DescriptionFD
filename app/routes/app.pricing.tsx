@@ -97,10 +97,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   console.log(shop, label, price);
   try {
     const returnUrl = new URL(
-      `https://admin.shopify.com/store/${shop?.split(".")[0]}/apps/${process.env.HANDLE}/app`,
+      `https://admin.shopify.com/store/${shop?.split(".")[0]}/apps/${process.env.HANDLE}/app/pricing`,
     );
-
-    console.log("isTest", process.env.NODE_ENV === "development");
 
     const response = await admin.graphql(
       `#graphql
