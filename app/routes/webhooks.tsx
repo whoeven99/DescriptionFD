@@ -3,6 +3,7 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import {
   InsertOrUpdateOrder,
+  SendAPGPurchaseEmail,
   StopBatchGenerateDescription,
   UpdateUserToken,
 } from "app/api/JavaServer";
@@ -89,6 +90,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             await UpdateUserToken({
               shop,
               token: credits,
+            });
+            await SendAPGPurchaseEmail({
+              shop,
+              token: credits,
+              amount: price,
             });
           }
         }
