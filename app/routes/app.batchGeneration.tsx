@@ -466,6 +466,7 @@ const Index = () => {
     if (generateFetcher.data) {
       if (generateFetcher.data.success) {
         setProgress({
+          status: 1,
           allCount: generateFetcher.data.response.allCount,
           unfinishedCount: generateFetcher.data.response.unfinishedCount,
           taskModel: generateFetcher.data.response.taskModel,
