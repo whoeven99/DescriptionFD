@@ -506,6 +506,8 @@ const Index = () => {
         pageType: pageType,
         contentType: contentType,
       });
+      console.log("response", response);
+
       setTemplates(response);
       setTemplate(response[0].id.toString());
     };
@@ -797,7 +799,9 @@ const Index = () => {
       languageStyle,
       brandStyle,
       templateId: Number(template),
-      templateType: false,
+      templateType:
+        templates.find((item: any) => item.id === Number(template))
+          ?.templateClass || false,
       model: model,
       language,
       seoKeywords: seoKeywordTags.join(","),

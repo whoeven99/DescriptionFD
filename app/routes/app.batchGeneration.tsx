@@ -58,7 +58,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     formData.get("batchGenerationData") as string,
   );
 
-  console.log("batchGenerationData", batchGenerationData);
+  console.log(`${shop} batchGenerationData`, batchGenerationData);
 
   try {
     const response = await BatchGenerateDescription({
@@ -70,7 +70,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       languageStyle: batchGenerationData.languageStyle,
       brandStyle: batchGenerationData.brandStyle,
       templateId: Number(batchGenerationData.template),
-      templateType: false,
+      templateType: batchGenerationData.templateType,
       model: batchGenerationData.model,
       seoKeywords: batchGenerationData.seoKeywords,
       brandWord: batchGenerationData.brandWord,
@@ -413,7 +413,6 @@ const Index = () => {
         pageType: "product",
         contentType: contentType,
       });
-
       setTemplates(response);
       if (response && response.length > 0) {
         setTemplate(response[0].id);
@@ -543,7 +542,6 @@ const Index = () => {
       shop: shop as string,
     });
     if (response.success) {
-      console.log(response.response);
       setProgress(response.response);
     }
   };
@@ -580,6 +578,7 @@ const Index = () => {
       error = true;
     }
     if (error) return;
+
     generateFetcher.submit(
       {
         batchGenerationData: JSON.stringify({
@@ -588,6 +587,9 @@ const Index = () => {
           languageStyle: languageStyle,
           brandStyle: brandStyle,
           template: template,
+          templateType:
+            templates.find((item: any) => template == item.id)?.templateClass ||
+            false,
           model: model,
           seoKeywords: seoKeyword,
           brandWord: brand,
