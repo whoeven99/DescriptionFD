@@ -506,6 +506,8 @@ const Index = () => {
         pageType: pageType,
         contentType: contentType,
       });
+      console.log("response", response);
+
       setTemplates(response);
       setTemplate(response[0].id.toString());
     };
@@ -797,7 +799,9 @@ const Index = () => {
       languageStyle,
       brandStyle,
       templateId: Number(template),
-      templateType: false,
+      templateType:
+        templates.find((item: any) => item.id === Number(template))
+          ?.templateClass || false,
       model: model,
       language,
       seoKeywords: seoKeywordTags.join(","),
@@ -1560,7 +1564,7 @@ const Index = () => {
                               words (
                             </Text>{" "}
                             <Text as="span" tone="success">
-                              {editedData.wordGap}%
+                              {editedData.wordGap * 100}%
                             </Text>{" "}
                             <Text variant="bodyMd" as="span">
                               ).
@@ -1656,15 +1660,15 @@ const Index = () => {
                               styles.Ciwi_QuickGenerator_Result_Content
                             }
                           >
-                            {isEdit ? (
-                              <div
-                                className={
-                                  styles.Ciwi_QuickGenerator_Result_Editor
-                                }
-                              >
-                                <Tiptap editor={editor} />
-                              </div>
-                            ) : (
+                            {/* {isEdit ? ( */}
+                            <div
+                              className={
+                                styles.Ciwi_QuickGenerator_Result_Editor
+                              }
+                            >
+                              <Tiptap editor={editor} />
+                            </div>
+                            {/* ) : (
                               <div
                                 className={
                                   styles.Ciwi_QuickGenerator_Result_Markdown
@@ -1676,7 +1680,7 @@ const Index = () => {
                                   }}
                                 />
                               </div>
-                            )}
+                            )} */}
                             <div
                               className={
                                 styles.Ciwi_QuickGenerator_Result_Feedback +
@@ -1684,38 +1688,38 @@ const Index = () => {
                                 (isEdit ? styles.Edit_Button : "")
                               }
                             >
-                              {isEdit ? (
-                                <Button onClick={handleConfirm}>Confirm</Button>
-                              ) : (
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    width: "100%",
+                              {/* {isEdit ? ( */}
+                              {/* <Button onClick={handleConfirm}>Confirm</Button> */}
+                              {/* ) : ( */}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  width: "100%",
+                                }}
+                              >
+                                <Button
+                                  variant="tertiary"
+                                  onClick={() => {
+                                    setOpen(true);
                                   }}
                                 >
+                                  View original description
+                                </Button>
+                                <ButtonGroup>
                                   <Button
-                                    variant="tertiary"
-                                    onClick={() => {
-                                      setOpen(true);
-                                    }}
+                                    onClick={handlePublish}
+                                    loading={
+                                      publishFetcher.state === "submitting"
+                                    }
                                   >
-                                    View original description
+                                    Publish
                                   </Button>
-                                  <ButtonGroup>
-                                    <Button
-                                      onClick={handlePublish}
-                                      loading={
-                                        publishFetcher.state === "submitting"
-                                      }
-                                    >
-                                      Publish
-                                    </Button>
-                                    <Button onClick={handleEdit}>Edit</Button>
-                                  </ButtonGroup>
-                                </div>
-                              )}
+                                  <Button onClick={handleEdit}>Edit</Button>
+                                </ButtonGroup>
+                              </div>
+                              {/* )} */}
                             </div>
                           </div>
                         ) : null}
