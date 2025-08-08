@@ -30,17 +30,21 @@ import CardSkeleton from "app/components/cardSkeleton";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const adminAuthResult = await authenticate.admin(request);
   const { session } = adminAuthResult;
+
+  const sort = request.url.split("sort=")[1];
+
   return {
     shop: session.shop,
     server: process.env.SERVER_URL,
+    sort: Number(sort),
   };
 };
 
 const Index = () => {
   const navigate = useNavigate();
 
-  const { shop, server } = useLoaderData<typeof loader>();
-  const [mainSelected, setMainSelected] = useState(0);
+  const { shop, server, sort } = useLoaderData<typeof loader>();
+  const [mainSelected, setMainSelected] = useState(sort);
   const [secondarySelected, setSecondarySelected] = useState(0);
   const [descriptionSelected, setDescriptionSelected] = useState<
     "description" | "seo"

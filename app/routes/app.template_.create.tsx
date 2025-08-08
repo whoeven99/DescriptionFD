@@ -210,7 +210,7 @@ const Index = () => {
     if (response.success) {
       shopify.saveBar.hide("template-create-save-bar");
       shopify.toast.show("Template created successfully");
-      navigate("/app/template");
+      navigate(`/app/template?sort=1`);
     } else {
       shopify.toast.show(response?.message);
       // setError(response.message);

@@ -36,12 +36,14 @@ const TemplateCard = ({
   handleAdd,
   handleDelete,
 }: TemplateCardProps) => {
+  console.log(`${content}: `, type);
+
   return (
     <Box
       borderColor="border"
       borderRadius="200"
       borderWidth="050"
-      minHeight="360px"
+      minHeight="380px"
       borderStyle="solid"
     >
       <div className={styles.Ciwi_template_card_content}>
@@ -51,7 +53,7 @@ const TemplateCard = ({
           </Text>
         </div>
         <div className={styles.Ciwi_template_card_content_name}>
-          <Badge>{type}</Badge>
+          {type && <Badge>{type}</Badge>}
           <Text as="h2" variant="headingMd">
             {title}
           </Text>
@@ -59,7 +61,11 @@ const TemplateCard = ({
             {description}
           </Text>
           <Box width="100%">
-            <InlineStack align="space-between" wrap={false} direction="row">
+            <InlineStack
+              align={type ? "space-between" : "end"}
+              wrap={false}
+              direction="row"
+            >
               {isSystem ? (
                 <>
                   <Button onClick={onClick}>Preview</Button>
@@ -79,25 +85,14 @@ const TemplateCard = ({
                 </>
               ) : (
                 <>
-                  {!isSystem && <Button onClick={onClick}>Preview</Button>}
-                  {isSystem ? (
-                    <Button
-                      variant="monochromePlain"
-                      tone="critical"
-                      onClick={handleDelete}
-                      loading={loading}
-                    >
-                      Delete
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="monochromePlain"
-                      onClick={handleDelete}
-                      loading={loading}
-                    >
-                      Delete
-                    </Button>
-                  )}
+                  {type && <Button onClick={onClick}>Preview</Button>}
+                  <Button
+                    variant="monochromePlain"
+                    onClick={handleDelete}
+                    loading={loading}
+                  >
+                    Delete
+                  </Button>
                 </>
               )}
             </InlineStack>
