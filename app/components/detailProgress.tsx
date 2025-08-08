@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   Grid,
+  InlineStack,
   ProgressBar,
   Text,
 } from "@shopify/polaris";
@@ -90,30 +91,50 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
 
   const pendingDoc = (
     <div>
-      <Text as="h2">
-        {itemStatusTexts[itemStatus] + tipTexts[currentTipIndex]}
-      </Text>
-      <Text as="h2">
-        Completed: {total - unfinished < 0 ? 0 : total - unfinished}
-      </Text>
+      <InlineStack gap="200">
+        <Text as="h2" fontWeight="bold">
+          Progress Details:
+        </Text>{" "}
+        <Text as="h2">
+          {itemStatusTexts[itemStatus] + tipTexts[currentTipIndex]}
+        </Text>
+      </InlineStack>
+      <InlineStack gap="200">
+        <Text as="h2" fontWeight="bold">
+          Completed:
+        </Text>{" "}
+        <Text as="h2">
+          {total - unfinished < 0 ? 0 : total - unfinished}/{total}
+        </Text>
+      </InlineStack>
     </div>
   );
 
   const finishedDoc = (
     <div>
       <Text as="h2">{moduleName} creation task has been completed</Text>
-      <Text as="h2">
-        Completed: {total - unfinished < 0 ? 0 : total - unfinished}
-      </Text>
+      <InlineStack gap="200">
+        <Text as="h2" fontWeight="bold">
+          Completed:
+        </Text>{" "}
+        <Text as="h2">
+          {total - unfinished < 0 ? 0 : total - unfinished}/{total}
+        </Text>
+      </InlineStack>
     </div>
   );
 
   const failedDoc = (
     <div>
       <Text as="h2">Abnormal error, stopped creating {moduleName} module</Text>
-      <Text as="h2">
-        Completed: {total - unfinished < 0 ? 0 : total - unfinished}
-      </Text>
+      <InlineStack gap="200">
+        <Text as="h2" fontWeight="bold">
+          Completed:
+        </Text>{" "}
+        <Text as="h2">
+          {total - unfinished < 0 ? 0 : total - unfinished}/{total}
+        </Text>
+      </InlineStack>
     </div>
   );
 
@@ -122,9 +143,14 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
       <Text as="h2">
         Insufficient credit, stopped creating {moduleName} module
       </Text>
-      <Text as="h2">
-        Completed: {total - unfinished < 0 ? 0 : total - unfinished}
-      </Text>
+      <InlineStack gap="200">
+        <Text as="h2" fontWeight="bold">
+          Completed:
+        </Text>{" "}
+        <Text as="h2">
+          {total - unfinished < 0 ? 0 : total - unfinished}/{total}
+        </Text>
+      </InlineStack>
     </div>
   );
 
@@ -140,9 +166,14 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
           <Grid columns={{ sm: 3 }}>
             <Grid.Cell columnSpan={{ xs: 4, sm: 2, md: 2, lg: 10, xl: 10 }}>
               <BlockStack gap="200">
-                <Text as="h2" variant="headingMd">
-                  Task Progress {updateTimeText}
-                </Text>
+                <InlineStack gap="200">
+                  <Text as="h2" variant="headingMd" fontWeight="bold">
+                    Task Progress
+                  </Text>
+                  <Text as="h2" variant="headingMd">
+                    {updateTimeText}
+                  </Text>
+                </InlineStack>
                 {status === 1 && finishedDoc}
                 {status === 2 && pendingDoc}
                 {(status === 3 || status === 6) && tokenExhaustedDoc}

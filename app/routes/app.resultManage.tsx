@@ -271,7 +271,8 @@ const Index = () => {
       languageStyle,
       brandStyle,
       templateId: Number(template),
-      templateType: false,
+      templateType: templates.find((item) => item.id === template)
+        ?.templateClass,
       model: model,
       language,
       seoKeywords: seoKeyword,
