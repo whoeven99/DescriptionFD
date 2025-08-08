@@ -543,6 +543,7 @@ const Index = () => {
       shop: shop as string,
     });
     if (response.success) {
+      console.log(response.response);
       setProgress(response.response);
     }
   };
@@ -726,11 +727,14 @@ const Index = () => {
               total={progress.allCount}
               unfinished={progress.unfinishedCount}
               moduleName={progress.taskModel}
+              itemStatus={progress.status || 0}
               status={progress.taskStatus}
+              updateTime={progress.taskTime}
               progress={
-                ((progress.allCount - progress.unfinishedCount) /
-                  progress.allCount) *
-                100
+                ((progress.allCount * 3 -
+                  (progress.unfinishedCount * 3 - progress?.status)) *
+                  100) /
+                (progress.allCount * 3)
               }
               handleStop={handleStop}
               loading={stopFetcher.state === "submitting"}
@@ -760,6 +764,7 @@ const Index = () => {
               onSelect={(e) => handleSelectedStatusChange(e)}
               canCreateNewView={false}
               filters={[]}
+              hideFilters
               // appliedFilters={appliedFilters}
               onClearAll={() => {}}
               mode={mode}

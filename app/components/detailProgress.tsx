@@ -13,20 +13,24 @@ interface DetailProgressProps {
   total: number;
   unfinished: number;
   moduleName: string;
+  itemStatus: number;
   status: number;
   progress: number;
   handleStop: () => void;
   loading: boolean;
+  updateTime: string;
 }
 
 const DetailProgress: React.FC<DetailProgressProps> = ({
   total,
   unfinished,
   moduleName,
+  itemStatus,
   status,
   progress,
   handleStop,
   loading,
+  updateTime,
 }) => {
   const navigate = useNavigate();
 
@@ -34,15 +38,24 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
 
   const tipIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const tipTexts = useMemo(
+  const tipTexts = useMemo(() => [".", "..", "..."], []);
+
+  const itemStatusTexts = useMemo(
     () => [
-      `Creating ${moduleName} module: `,
-      "Each product takes about 10-20 seconds to create...",
-      "Syncing outline to AI model",
-      "AI big models are returning content",
+      "Fetching product data",
+      "Generating content with AI",
+      "Saving results to store",
     ],
     [],
   );
+
+  const updateTimeText = useMemo(() => {
+    if (updateTime) {
+      const newUpdateTime = new Date(updateTime);
+      return `(${newUpdateTime.toLocaleString()})`;
+    }
+    return "";
+  }, [updateTime]);
 
   useEffect(() => {
     return () => {
@@ -77,10 +90,11 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
 
   const pendingDoc = (
     <div>
-      <Text as="h2">{tipTexts[currentTipIndex]}</Text>
       <Text as="h2">
-        Completed: {total - unfinished < 0 ? 0 : total - unfinished}, pending:{" "}
-        {unfinished}
+        {itemStatusTexts[itemStatus] + tipTexts[currentTipIndex]}
+      </Text>
+      <Text as="h2">
+        Completed: {total - unfinished < 0 ? 0 : total - unfinished}
       </Text>
     </div>
   );
@@ -89,8 +103,7 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
     <div>
       <Text as="h2">{moduleName} creation task has been completed</Text>
       <Text as="h2">
-        Completed: {total - unfinished < 0 ? 0 : total - unfinished}, pending:{" "}
-        {unfinished}
+        Completed: {total - unfinished < 0 ? 0 : total - unfinished}
       </Text>
     </div>
   );
@@ -99,8 +112,7 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
     <div>
       <Text as="h2">Abnormal error, stopped creating {moduleName} module</Text>
       <Text as="h2">
-        Completed: {total - unfinished < 0 ? 0 : total - unfinished}, pending:{" "}
-        {unfinished}
+        Completed: {total - unfinished < 0 ? 0 : total - unfinished}
       </Text>
     </div>
   );
@@ -111,8 +123,7 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
         Insufficient credit, stopped creating {moduleName} module
       </Text>
       <Text as="h2">
-        Completed: {total - unfinished < 0 ? 0 : total - unfinished}, pending:{" "}
-        {unfinished}
+        Completed: {total - unfinished < 0 ? 0 : total - unfinished}
       </Text>
     </div>
   );
@@ -130,17 +141,16 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
             <Grid.Cell columnSpan={{ xs: 4, sm: 2, md: 2, lg: 10, xl: 10 }}>
               <BlockStack gap="200">
                 <Text as="h2" variant="headingMd">
-                  Task Progress
+                  Task Progress {updateTimeText}
                 </Text>
                 {status === 1 && finishedDoc}
                 {status === 2 && pendingDoc}
-                {status === 3 && tokenExhaustedDoc}
-                {status === 4 && failedDoc}
+                {(status === 3 || status === 6) && tokenExhaustedDoc}
+                {(status === 4 || status === 5) && failedDoc}
                 <Text as="h2">{""}</Text>
                 <div style={{ width: "100%" }}>
                   <ProgressBar
-                    progress={progress < 0 ? 0 : progress}
-                    tone="primary"
+                    progress={progress < 0 ? 0 : status === 1 ? 100 : progress}
                     size="small"
                   />
                 </div>
@@ -177,26 +187,25 @@ const DetailProgress: React.FC<DetailProgressProps> = ({
                     Stop
                   </Button>
                 )}
-                {status === 3 && (
-                <BlockStack gap="200">
-                  <Button
-                    variant="primary"
-                    onClick={() => {
-                      navigate("/app/pricing");
-                    }}
-                  >
-                    Purchase amount
-                  </Button>
-                  {/* <Button
+                {(status === 3 || status === 6) && (
+                  <BlockStack gap="200">
+                    <Button
+                      onClick={() => {
+                        navigate("/app/pricing");
+                      }}
+                    >
+                      Purchase amount
+                    </Button>
+                    {/* <Button
                     variant="primary"
                     onClick={() => {
                     }}
                   >
                     Continue to create
                   </Button> */}
-                </BlockStack>
-              )}
-                {(status === 4) && (
+                  </BlockStack>
+                )}
+                {(status === 4 || status === 5) && (
                   <Button onClick={handleContactSupport}>
                     Contact the Team
                   </Button>

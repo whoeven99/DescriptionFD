@@ -30,6 +30,19 @@ import { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "app/shopify.server";
 import { removeHtmlTags } from "./app._index/route";
 import { Modal, TitleBar } from "@shopify/app-bridge-react";
+import { useEditor } from "@tiptap/react";
+import { Video } from "app/components/richTextInput/extensions/VideoNode";
+import TextAlign from "@tiptap/extension-text-align";
+import TableRow from "@tiptap/extension-table-row";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import { Table } from "@tiptap/extension-table";
+import { LocalImage } from "app/components/richTextInput/extensions/imageNode";
+import Color from "@tiptap/extension-color";
+import { TextStyle } from "@tiptap/extension-text-style";
+import StarterKit from "@tiptap/starter-kit";
+import Highlight from "@tiptap/extension-highlight";
+import Tiptap from "app/components/richTextInput/richTextInput";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const adminAuthResult = await authenticate.admin(request);
@@ -50,6 +63,52 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 const Index = () => {
   const { shop, server } = useLoaderData<typeof loader>();
+
+  const originalEditor = useEditor({
+    extensions: [
+      StarterKit,
+      TextStyle,
+      Color,
+      Highlight,
+      LocalImage,
+      Table.configure({
+        resizable: true, // 允许拖动调整列宽
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      TextAlign.configure({
+        types: ["heading", "paragraph"], // 指定允许设置对齐的节点类型
+      }),
+      Video,
+      // Underline
+    ], // define your extension array
+    content: "", // initial content
+    immediatelyRender: false, // 🔹 SSR 环境下必须加这个
+  });
+
+  const targetEditor = useEditor({
+    extensions: [
+      StarterKit,
+      TextStyle,
+      Color,
+      Highlight,
+      LocalImage,
+      Table.configure({
+        resizable: true, // 允许拖动调整列宽
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      TextAlign.configure({
+        types: ["heading", "paragraph"], // 指定允许设置对齐的节点类型
+      }),
+      Video,
+      // Underline
+    ], // define your extension array
+    content: "", // initial content
+    immediatelyRender: false, // 🔹 SSR 环境下必须加这个
+  });
 
   const navigate = useNavigate();
   const [data, setData] = useState<any[]>([]);
@@ -104,6 +163,9 @@ const Index = () => {
             originalContent: productFetcher.data.response.descriptionHtml,
           },
         ]);
+        originalEditor?.commands.setContent(
+          productFetcher.data.response.descriptionHtml,
+        );
       }
     }
   }, [productFetcher.data]);
@@ -145,9 +207,7 @@ const Index = () => {
           listId: [activeItem],
         });
         if (response.success) {
-          const html = handleSetValue(
-            response.response[0].generateContent || "",
-          );
+          const html = response.response[0].generateContent || "";
           setData([
             {
               ...response.response[0],
@@ -155,6 +215,7 @@ const Index = () => {
             },
           ]);
           setUpdateValue(html);
+          targetEditor?.commands.setContent(html);
         }
         setTableLoading(false);
       };
@@ -172,15 +233,15 @@ const Index = () => {
     }
   }, [publishFetcher.data]);
 
-  const handleSetValue = (text: string) => {
-    // 先去除首尾空行，再按行分割，每行用 <p> 包裹
-    const html = text
-      .trim()
-      .split("\n")
-      .map((line) => `<p>${line}</p>`)
-      .join("");
-    return html;
-  };
+  // const handleSetValue = (text: string) => {
+  //   // 先去除首尾空行，再按行分割，每行用 <p> 包裹
+  //   const html = text
+  //     .trim()
+  //     .split("\n")
+  //     .map((line) => `<p>${line}</p>`)
+  //     .join("");
+  //   return html;
+  // };
 
   const progressDataUpdate = async () => {
     const response = await GetUserData({
@@ -219,7 +280,8 @@ const Index = () => {
     });
     if (response.success) {
       setIsGenerating(false);
-      const html = handleSetValue(response.response.description);
+      const html = response.response.description;
+      targetEditor?.commands.setContent(html);
       setUpdateValue(html);
       setOpen(false);
       shopify.toast.show("Description generated successfully");
@@ -237,8 +299,8 @@ const Index = () => {
         contentType: data.find((item) => item.id === id)?.contentType,
         description:
           data.find((item) => item.id === id)?.contentType === "seo"
-            ? removeHtmlTags(updateValue)
-            : updateValue,
+            ? removeHtmlTags(targetEditor?.getHTML() || "")
+            : targetEditor?.getHTML() || "",
       },
       {
         method: "POST",
@@ -459,30 +521,13 @@ const Index = () => {
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
-          <Box maxWidth={"1500px"}>
-            <ReactQuill
-              readOnly={true}
-              value={originalContent}
-              onChange={(value) => {
-                setUpdateValue(value);
-              }}
-              style={{
-                width: "100%",
-              }}
-            />
+          <Box maxWidth={"1500px"} minWidth={"400px"}>
+            <Tiptap editor={originalEditor} readOnly={true} />
           </Box>
         </IndexTable.Cell>
         <IndexTable.Cell>
-          <Box maxWidth={"1500px"}>
-            <ReactQuill
-              value={updateValue}
-              onChange={(value) => {
-                setUpdateValue(value);
-              }}
-              style={{
-                width: "100%",
-              }}
-            />
+          <Box maxWidth={"1500px"} minWidth={"400px"}>
+            <Tiptap editor={targetEditor} />
           </Box>
         </IndexTable.Cell>
         <IndexTable.Cell>
@@ -582,20 +627,40 @@ const Index = () => {
                   /> */}
                 </InlineStack>
               </Box>
-              <IndexTable
-                // condensed={useBreakpoints().smDown}
-                // resourceName={resourceName}
-                itemCount={data.length}
-                selectable={false}
-                headings={[
-                  { title: "Module" },
-                  { title: "Original Content" },
-                  { title: "Generated Content" },
-                  { title: "Action" },
-                ]}
-              >
-                {rowMarkup}
-              </IndexTable>
+              {templates.length > 0 ? (
+                <IndexTable
+                  // condensed={useBreakpoints().smDown}
+                  // resourceName={resourceName}
+                  itemCount={data.length}
+                  selectable={false}
+                  headings={[
+                    { title: "Module" },
+                    { title: "Original Content" },
+                    { title: "Generated Content" },
+                    { title: "Action" },
+                  ]}
+                >
+                  {rowMarkup}
+                </IndexTable>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "90%",
+                  }}
+                >
+                  <BlockStack
+                    gap="200"
+                    align="center"
+                    inlineAlign="center"
+                    reverseOrder
+                  >
+                    <Spinner />
+                  </BlockStack>
+                </div>
+              )}
             </Box>
           </InlineStack>
         )}

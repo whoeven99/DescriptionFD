@@ -32,6 +32,19 @@ import styles from "../styles/styles.module.css";
 import { authenticate } from "app/shopify.server";
 import { GenerateDescription, GetTemplateByShopName } from "app/api/JavaServer";
 import { Modal, TitleBar } from "@shopify/app-bridge-react";
+import Tiptap from "app/components/richTextInput/richTextInput";
+import { useEditor } from "@tiptap/react";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { TableRow } from "@tiptap/extension-table-row";
+import { Color } from "@tiptap/extension-color";
+import { TextStyle } from "@tiptap/extension-text-style";
+import StarterKit from "@tiptap/starter-kit";
+import { LocalImage } from "app/components/richTextInput/extensions/imageNode";
+import { Table } from "@tiptap/extension-table";
+import TextAlign from "@tiptap/extension-text-align";
+import { Video } from "app/components/richTextInput/extensions/VideoNode";
+import Highlight from "@tiptap/extension-highlight";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const adminAuthResult = await authenticate.admin(request);
@@ -52,6 +65,29 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 const Index = () => {
   const { server, shop } = useLoaderData<typeof loader>();
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      TextStyle,
+      Color,
+      Highlight,
+      LocalImage,
+      Table.configure({
+        resizable: true, // 允许拖动调整列宽
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      TextAlign.configure({
+        types: ["heading", "paragraph"], // 指定允许设置对齐的节点类型
+      }),
+      Video,
+      // Underline
+    ], // define your extension array
+    content: "", // initial content
+    immediatelyRender: false, // 🔹 SSR 环境下必须加这个
+  });
+
   const location = useLocation();
   // const [userCost, setUserCost] = useState<any>({
   //   allCounter: 0,
@@ -61,6 +97,7 @@ const Index = () => {
   //   collectionSeoCounter: 0,
   //   extraCounter: 0,
   // });
+
   const [shopOwnerName, setShopOwnerName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [pageType, setPageType] = useState<"product" | "collection">("product");
@@ -110,6 +147,28 @@ const Index = () => {
 
   const tipIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstLoad = useRef(true);
+
+  // 当editedData更新时，同步更新editor内容
+  // useEffect(() => {
+  //   if (editor && editedData?.description) {
+  //     editor.commands.setContent(editedData.description);
+  //   }
+  // }, [editor, editedData?.description]);
+
+  // // 监听editor内容变化
+  // useEffect(() => {
+  //   if (editor) {
+  //     editor.on('update', ({ editor }) => {
+  //       const html = editor.getHTML();
+  //       if (editedData) {
+  //         setEditedData({
+  //           ...editedData,
+  //           description: html,
+  //         });
+  //       }
+  //     });
+  //   }
+  // }, [editor, editedData]);
 
   // const filterTemplates = useMemo(() => {
   //   if (!templates) return [];
@@ -673,8 +732,8 @@ const Index = () => {
         contentType: editedData.contentType,
         description:
           contentType === "seo"
-            ? removeHtmlTags(editedData.description)
-            : editedData.description,
+            ? removeHtmlTags(editor?.getHTML() || "")
+            : editor?.getHTML() || "",
       },
       { method: "POST", action: "/descriptionPublish" },
     );
@@ -750,6 +809,7 @@ const Index = () => {
       setIsGenerating(false);
       stopTipTimer(); // 停止定时器
       setEditedData(response.response);
+      editor?.commands.setContent(response.response.description);
       setOriginalData(response.response);
       // if (
       //   response.response.pageType === "product" &&
@@ -1500,7 +1560,7 @@ const Index = () => {
                               words (
                             </Text>{" "}
                             <Text as="span" tone="success">
-                              {editedData.wordGap.toFixed(4) * 100}%
+                              {editedData.wordGap}%
                             </Text>{" "}
                             <Text variant="bodyMd" as="span">
                               ).
@@ -1602,16 +1662,7 @@ const Index = () => {
                                   styles.Ciwi_QuickGenerator_Result_Editor
                                 }
                               >
-                                <ReactQuill
-                                  value={editedData?.description || "<p></p>"}
-                                  onChange={(value) => {
-                                    setEditedData({
-                                      ...editedData,
-                                      description: value,
-                                    });
-                                  }}
-                                  style={{ height: "900px" }}
-                                />
+                                <Tiptap editor={editor} />
                               </div>
                             ) : (
                               <div
@@ -1621,7 +1672,7 @@ const Index = () => {
                               >
                                 <div
                                   dangerouslySetInnerHTML={{
-                                    __html: editedData?.description || "",
+                                    __html: editor?.getHTML() || "",
                                   }}
                                 />
                               </div>

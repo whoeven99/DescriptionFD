@@ -97,7 +97,8 @@
 }
 
 .Ciwi_QuickGenerator_Result_Editor {
-  padding-bottom: 60px;
+  padding-bottom: 70px;
+  height: 100%;
 }
 
 .Ciwi_QuickGenerator_Result_Feedback {
