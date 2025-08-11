@@ -43,6 +43,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Tiptap from "app/components/richTextInput/richTextInput";
+import styles from "app/routes/styles/styles.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const adminAuthResult = await authenticate.admin(request);
@@ -182,7 +183,7 @@ const Index = () => {
       });
 
       setTemplates(response);
-      setTemplate(response[0].id.toString());
+      setTemplate(response[0]?.id.toString());
     };
     fetchTemplates();
   }, [data]);
@@ -260,6 +261,10 @@ const Index = () => {
     }
   };
 
+  console.log(templates);
+  console.log(data[0]);
+  
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     const response = await GenerateDescription({
@@ -271,8 +276,8 @@ const Index = () => {
       languageStyle,
       brandStyle,
       templateId: Number(template),
-      templateType: templates.find((item) => item.id === template)
-        ?.templateClass,
+      templateType:
+        templates.find((item) => item.id === Number(template))?.templateClass || false,
       model: model,
       language,
       seoKeywords: seoKeyword,
@@ -521,14 +526,25 @@ const Index = () => {
             {pageType} {contentType}
           </Text>
         </IndexTable.Cell>
-        <IndexTable.Cell>
-          <Box maxWidth={"1500px"} minWidth={"400px"}>
-            <Tiptap editor={originalEditor} readOnly={true} />
+        <IndexTable.Cell className={styles.Ciwi_Original_Content_Cell}>
+          <Box>
+            <Tiptap
+              editor={originalEditor}
+              readOnly={true}
+              style={{
+                height: "700px",
+              }}
+            />
           </Box>
         </IndexTable.Cell>
-        <IndexTable.Cell>
-          <Box maxWidth={"1500px"} minWidth={"400px"}>
-            <Tiptap editor={targetEditor} />
+        <IndexTable.Cell className={styles.Ciwi_Generated_Content_Cell}>
+          <Box>
+            <Tiptap
+              editor={targetEditor}
+              style={{
+                height: "700px",
+              }}
+            />
           </Box>
         </IndexTable.Cell>
         <IndexTable.Cell>

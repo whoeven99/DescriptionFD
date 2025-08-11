@@ -143,3 +143,13 @@
 .Ciwi_Pricing_Card_Selected {
   border: 2px solid rgb(0, 127, 97);
 }
+
+.Ciwi_Original_Content_Cell {
+  width: 700px;
+  height: 700px;
+}
+
+.Ciwi_Generated_Content_Cell {
+  width: 700px;
+  height: 700px;
+}
