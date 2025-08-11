@@ -85,6 +85,8 @@ export const GenerateDescription = async ({
     const response = await axios.post(
       `${server}/apg/descriptionGeneration/generateDescription?shopName=${shop}`,
       {
+        pageType: pageType,
+        contentType: contentType,
         productId: productId,
         textTone: languageStyle,
         brandTone: brandStyle,
