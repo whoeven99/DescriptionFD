@@ -514,6 +514,7 @@ export const GetUserCounter = async ({
 };
 
 export const InsertOrUpdateOrder = async ({
+  id,
   shop,
   amount,
   name,
@@ -521,10 +522,11 @@ export const InsertOrUpdateOrder = async ({
   status,
   confirmationUrl,
 }: {
+  id: string;
   shop: string;
   amount: number;
   name: string;
-  createdAt: Date;
+  createdAt: string;
   status: string;
   confirmationUrl: string;
 }) => {
@@ -532,6 +534,7 @@ export const InsertOrUpdateOrder = async ({
     const response = await axios.post(
       `${process.env.SERVER_URL}/apg/orders/insertOrUpdateOrder?shopName=${shop}`,
       {
+        id,
         amount: amount,
         name: name,
         createdAt: createdAt,
