@@ -75,14 +75,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               price = 239.99;
               break;
           }
-          console.log("payload?.app_purchase_one_time.created_at", payload?.app_purchase_one_time.created_at);
-          console.log("payload?.app_purchase_one_time.created_at Data", new Date(payload?.app_purchase_one_time.created_at));
-          
+          console.log(
+            "payload?.app_purchase_one_time.created_at",
+            payload?.app_purchase_one_time.created_at,
+          );
+          console.log(
+            "payload?.app_purchase_one_time.created_at Data",
+            new Date(payload?.app_purchase_one_time.created_at),
+          );
+
           InsertOrUpdateOrder({
             shop,
+            id: payload?.app_purchase_one_time.admin_graphql_api_id,
             amount: price,
             name: payload?.app_purchase_one_time.name,
-            createdAt: new Date(payload?.app_purchase_one_time.created_at),
+            createdAt: new Date(payload?.app_purchase_one_time.created_at)
+              .toISOString()
+              .slice(0, 19),
             status: payload?.app_purchase_one_time.status,
             confirmationUrl: shop,
           });

@@ -43,40 +43,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           shopOwnerName
           email
         }
-        # shopLocales{
-        #   locale
-        #   name
-        #   primary
-        #   published
-        # }
       }`,
     );
 
     const data = await response.json();
 
-    // const primaryLanguage = data.data.shopLocales.find(
-    //   (locale: any) => locale.primary,
-    // )?.name;
     const graphqlData = data.data.shop;
-    await axios.get(
-      `${process.env.SERVER_URL}/apg/userCounter/initUserCounter?shopName=${shopName}`,
-    );
+
     await axios.post(
       `${process.env.SERVER_URL}/apg/users/insertOrUpdateApgUser?shopName=${shopName}`,
       {
         shopName: shopName,
-        id: 0,
         accessToken: session?.accessToken,
         email: graphqlData.email,
         firstName: graphqlData.shopOwnerName.split(" ")[0],
         lastName: graphqlData.shopOwnerName.split(" ")[1],
       },
     );
+
     return {
       success: true,
       errorCode: 0,
       errorMsg: "",
-      // response: primaryLanguage,
+      response: null,
     };
   } catch (error) {
     console.log("error", error);
@@ -84,7 +73,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       success: false,
       errorCode: 1,
       errorMsg: "Failed to get primary language",
-      // response: "English",
+      response: null,
     };
   }
 };
