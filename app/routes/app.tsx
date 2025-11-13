@@ -68,7 +68,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       response: null,
     };
   } catch (error) {
-    console.log("error", error);
     return {
       success: false,
       errorCode: 1,

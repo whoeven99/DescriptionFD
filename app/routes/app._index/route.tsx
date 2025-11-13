@@ -506,7 +506,6 @@ const Index = () => {
         pageType: pageType,
         contentType: contentType,
       });
-      console.log("response", response);
 
       setTemplates(response);
       setTemplate(response[0].id.toString());
@@ -809,7 +808,6 @@ const Index = () => {
       brandSlogan: brandSlogan || "",
     });
     if (response.success) {
-      console.log(response.response);
       setIsGenerating(false);
       stopTipTimer(); // 停止定时器
       setEditedData(response.response);

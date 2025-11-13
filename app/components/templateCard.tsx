@@ -36,8 +36,6 @@ const TemplateCard = ({
   handleAdd,
   handleDelete,
 }: TemplateCardProps) => {
-  console.log(`${content}: `, type);
-
   return (
     <Box
       borderColor="border"

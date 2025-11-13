@@ -94,7 +94,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { shop } = session;
   const label = formData.get("label");
   const price = formData.get("price");
-  console.log(shop, label, price);
   try {
     const returnUrl = new URL(
       `https://admin.shopify.com/store/${shop?.split(".")[0]}/apps/${process.env.HANDLE}/app/pricing`,
