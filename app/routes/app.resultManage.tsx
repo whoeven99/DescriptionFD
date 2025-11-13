@@ -261,10 +261,6 @@ const Index = () => {
     }
   };
 
-  console.log(templates);
-  console.log(data[0]);
-  
-
   const handleGenerate = async () => {
     setIsGenerating(true);
     const response = await GenerateDescription({

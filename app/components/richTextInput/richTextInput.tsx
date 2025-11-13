@@ -19,8 +19,6 @@ const Tiptap = ({ editor, style, readOnly }: TiptapProps) => {
     editor?.options?.content || "",
   );
 
-  console.log("style: ", style);
-
   // HTML 模式下同步 div 内容
   useEffect(() => {
     if (!showTiptap) {
@@ -30,10 +28,6 @@ const Tiptap = ({ editor, style, readOnly }: TiptapProps) => {
       // htmlEditorRef.current.innerText = (htmlContent);
     }
   }, [showTiptap]);
-
-  useEffect(() => {
-    console.log("editor: ", editor);
-  }, [editor]);
 
   const hideTiptap = (value: boolean) => {
     setShowTiptap(value);

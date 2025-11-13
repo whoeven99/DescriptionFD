@@ -44,7 +44,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   const { shop, server, sort } = useLoaderData<typeof loader>();
-  const [mainSelected, setMainSelected] = useState(sort);
+  const [mainSelected, setMainSelected] = useState(sort || 0);
   const [secondarySelected, setSecondarySelected] = useState(0);
   const [descriptionSelected, setDescriptionSelected] = useState<
     "description" | "seo"
@@ -196,14 +196,11 @@ const Index = () => {
   );
 
   const handlePreview = async (template: any) => {
-    console.log("template:", template);
     const response = await PreviewExampleDataByTemplateId({
       server: server as string,
       shop: shop as string,
       templateId: template.id,
     });
-
-    console.log("response:", response);
 
     setPreviewModal({
       ...template,

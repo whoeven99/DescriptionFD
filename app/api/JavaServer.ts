@@ -250,7 +250,7 @@ export const GetTemplateByShopName = async ({
       //   templateSubtype: contentType,
       // },
     );
-    console.log(res.data);
+
     if (res.data.success) {
       if (pageType === null && contentType === "description") {
         response = res.data.response.filter(

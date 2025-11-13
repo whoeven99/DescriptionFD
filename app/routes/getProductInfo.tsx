@@ -167,8 +167,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         };
       }
     default:
-      console.log(`${shop} getProductInfo default`);
-      console.log("data: ", query, pageSize);
       try {
         const response = await admin.graphql(
           `#graphql
